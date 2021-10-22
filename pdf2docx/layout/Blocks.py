@@ -97,6 +97,10 @@ class Blocks(ElementCollection):
             # add to list
             self.append(block)
 
+        # remove the elememts that width and height are both less than 2 pixels
+        f = lambda block: not (block.is_inline_image_block and block.bbox.width < 2 and block.bbox.height < 2)
+        self.reset(filter(f, self))
+
         return self
 
     def clean_up(self, delete_end_line_hyphen: bool,

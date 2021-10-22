@@ -14,7 +14,7 @@ cv = cv.load_pages()
 totalPageNum = len(cv.pages)
 
 # for pageNum in range(0, totalPageNum):
-for pageNum in [114]:
+for pageNum in [80]:
     print("starting on page: %d" % pageNum)
     cv = cv.load_pages(start=pageNum, end=pageNum+1)
     cv = cv.parse_document(**settings)
@@ -24,3 +24,4 @@ for pageNum in [114]:
 
 cv.close()
 
+# 114 , 80
