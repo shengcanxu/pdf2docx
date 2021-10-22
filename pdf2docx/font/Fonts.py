@@ -48,7 +48,9 @@ class Fonts(BaseCollection):
         
         # show warning msg if not found
         if default:
-            logging.warning('Replace font "%s" with "%s" due to lack of data.', font_name, default.name)
+            #TODO: 取消这个注释
+            # logging.warning('Replace font "%s" with "%s" due to lack of data.', font_name, default.name)
+            pass
         return Font(descriptor=target, name=default.name, line_height=default.line_height)
 
 

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''A group of instances, e.g. Blocks, Lines, Spans, Shapes.
 '''
 
@@ -10,11 +9,12 @@ from .share import IText, TextDirection, solve_rects_intersection, graph_bfs
 
 class BaseCollection:
     '''Base collection representing a list of instances.'''
-    def __init__(self, instances:list=None, parent=None):
+    def __init__(self, instances: list = None, parent=None):
         '''Init collection from a list of instances.'''
         self._parent = parent
         self._instances = []
-        self.extend(instances or []) # Note to exclude empty instance by default
+        self.extend(instances
+                    or [])  # Note to exclude empty instance by default
 
     def __getitem__(self, idx):
         try:
@@ -25,13 +25,15 @@ class BaseCollection:
         else:
             return instances
 
-    def __iter__(self): return (instance for instance in self._instances)
+    def __iter__(self):
+        return (instance for instance in self._instances)
 
-    def __len__(self): return len(self._instances)
+    def __len__(self):
+        return len(self._instances)
 
     @property
-    def parent(self): return self._parent
-
+    def parent(self):
+        return self._parent
 
     @property
     def bbox(self):
@@ -39,20 +41,19 @@ class BaseCollection:
         rect = fitz.Rect()
         for instance in self._instances:
             rect |= instance.bbox
-        return fitz.Rect([round(x,1) for x in rect]) # NOTE: round to avoid digital error
+        return fitz.Rect([round(x, 1)
+                          for x in rect])  # NOTE: round to avoid digital error
 
-
-    def append(self, instance): 
+    def append(self, instance):
         if not instance: return
         self._instances.append(instance)
 
-
-    def extend(self, instances:list): 
+    def extend(self, instances: list):
         if not instances: return
-        for instance in instances: self.append(instance)
+        for instance in instances:
+            self.append(instance)
 
-
-    def reset(self, instances:list=None):
+    def reset(self, instances: list = None):
         """Reset instances list.
 
         Args:
@@ -65,21 +66,17 @@ class BaseCollection:
         self.extend(instances or [])
         return self
 
-
     def store(self):
         '''Store attributes in json format.'''
-        return [ instance.store() for instance in self._instances ]
-
+        return [instance.store() for instance in self._instances]
 
     def restore(self, *args, **kwargs):
         '''Construct Collection from a list of dict.'''
         raise NotImplementedError
 
 
-
 class Collection(BaseCollection):
     '''Collection of instance focusing on grouping sub-collection based on intersection/alignment.'''
-
     def group(self, fun):
         """Group instances according to user defined criterion.
 
@@ -107,21 +104,23 @@ class Collection(BaseCollection):
         # the i-th item is a set of indexes, which connected to the i-th instance.
         # NOTE: O(n^2) method, but it's acceptable (~0.2s) when n<1000 which is satisfied by page blocks
         num = len(self._instances)
-        index_groups = [set() for i in range(num)] # type: list[set]        
+        index_groups = [set() for i in range(num)]  # type: list[set]
         for i, instance in enumerate(self._instances):
             # connections of current instance to all instances after it
-            for j in range(i+1, num):
+            for j in range(i + 1, num):
                 if fun(instance, self._instances[j]):
                     index_groups[i].add(j)
                     index_groups[j].add(i)
 
         # search graph -> grouped index of instance
         groups = graph_bfs(index_groups)
-        groups = [self.__class__([self._instances[i] for i in group]) for group in groups]
+        groups = [
+            self.__class__([self._instances[i] for i in group])
+            for group in groups
+        ]
         return groups
 
-    
-    def group_by_connectivity(self, dx:float, dy:float):
+    def group_by_connectivity(self, dx: float, dy: float):
         """Collect connected instances into same group.
 
         Args:
@@ -141,40 +140,44 @@ class Collection(BaseCollection):
         # build the graph -> adjacent list:
         # the i-th item is a set of indexes, which connected to the i-th instance
         num = len(self._instances)
-        index_groups = [set() for _ in range(num)] # type: list[set]
+        index_groups = [set() for _ in range(num)]  # type: list[set]
 
         # solve rectangle intersection problem
         i_rect_x, i = [], 0
         d_rect = (-dx, -dy, dx, dy)
         for rect in self._instances:
-            points = [a+b for a,b in zip(rect.bbox, d_rect)] # consider tolerance
-            i_rect_x.append((i,   points, points[0]))
-            i_rect_x.append((i+1, points, points[2]))
+            points = [a + b
+                      for a, b in zip(rect.bbox, d_rect)]  # consider tolerance
+            i_rect_x.append((i, points, points[0]))
+            i_rect_x.append((i + 1, points, points[2]))
             i += 2
         i_rect_x.sort(key=lambda item: item[-1])
-        solve_rects_intersection(i_rect_x, 2*num, index_groups)
+        solve_rects_intersection(i_rect_x, 2 * num, index_groups)
 
         # search graph -> grouped index of instance
         groups = graph_bfs(index_groups)
-        groups = [self.__class__([self._instances[i] for i in group]) for group in groups]
+        groups = [
+            self.__class__([self._instances[i] for i in group])
+            for group in groups
+        ]
         return groups
-    
-    
-    def group_by_columns(self, factor:float=0.0):
+
+    def group_by_columns(self, factor: float = 0.0):
         '''Group elements into columns based on the bbox (ignore text direction).'''
         # split in columns
-        fun = lambda a,b: a.vertically_align_with(b, factor=factor, text_direction=False)
+        fun = lambda a, b: a.vertically_align_with(
+            b, factor=factor, text_direction=False)
         groups = self.group(fun)
-        
+
         # NOTE: increasing in x-direction is required!
         groups.sort(key=lambda group: group.bbox.x0)
         return groups
 
-
-    def group_by_rows(self, factor:float=0.0):
+    def group_by_rows(self, factor: float = 0.0):
         '''Group elements into rows based on the bbox (ignore text direction).'''
         # split in rows
-        fun = lambda a,b: a.horizontally_align_with(b, factor=factor, text_direction=False)
+        fun = lambda a, b: a.horizontally_align_with(
+            b, factor=factor, text_direction=False)
         groups = self.group(fun)
 
         # NOTE: increasing in y-direction is required!
@@ -182,35 +185,31 @@ class Collection(BaseCollection):
 
         return groups
 
-
     def group_by_physical_rows(self):
         '''Group lines into physical rows.'''
-        fun = lambda a,b: a.in_same_row(b)
+        fun = lambda a, b: a.in_same_row(b)
         return self.group(fun)
-
 
 
 class ElementCollection(Collection, IText):
     '''Collection of ``Element`` instances.'''
     @property
     def text_direction(self):
-        '''Get text direction. All instances must have same text direction.''' 
+        '''Get text direction. All instances must have same text direction.'''
         if self._instances and hasattr(self._instances[0], 'text_direction'):
             res = set(instance.text_direction for instance in self._instances)
-            if len(res)==1:
+            if len(res) == 1:
                 return list(res)[0]
 
         # normal direction by default
-        return TextDirection.LEFT_RIGHT 
+        return TextDirection.LEFT_RIGHT
 
-
-    def _update_bbox(self, e:Element):
+    def _update_bbox(self, e: Element):
         '''Update parent bbox.'''
-        if not self._parent is None: # Note: `if self._parent` does not work here
+        if not self._parent is None:  # Note: `if self._parent` does not work here
             self._parent.union_bbox(e)
 
-
-    def append(self, e:Element):
+    def append(self, e: Element):
         """Append an instance, update parent's bbox accordingly and set the parent of the added instance.
 
         Args:
@@ -221,23 +220,21 @@ class ElementCollection(Collection, IText):
         self._update_bbox(e)
 
         # set parent
-        if not self._parent is None: e.parent = self._parent 
+        if not self._parent is None: e.parent = self._parent
 
-
-    def insert(self, nth:int, e:Element):
+    def insert(self, nth: int, e: Element):
         """Insert a Element and update parent's bbox accordingly.
 
         Args:
             nth (int): the position to insert.
             e (Element): the instance to insert.
-        """        
+        """
         if not e: return
         self._instances.insert(nth, e)
         self._update_bbox(e)
-        e.parent = self._parent # set parent
+        e.parent = self._parent  # set parent
 
-    
-    def pop(self, nth:int):
+    def pop(self, nth: int):
         """Delete the ``nth`` instance.
 
         Args:
@@ -245,44 +242,46 @@ class ElementCollection(Collection, IText):
 
         Returns:
             ElementCollection: the removed instance.
-        """        
+        """
         return self._instances.pop(nth)
-
 
     def sort_in_reading_order(self):
         '''Sort collection instances in reading order (considering text direction), e.g.
             for normal reading direction: from top to bottom, from left to right.
         '''
         if self.is_horizontal_text:
-            self._instances.sort(key=lambda e: (e.bbox.y0, e.bbox.x0, e.bbox.x1))
+            self._instances.sort(
+                key=lambda e: (e.bbox.y0, e.bbox.x0, e.bbox.x1))
         else:
-            self._instances.sort(key=lambda e: (e.bbox.x0, e.bbox.y1, e.bbox.y0))
+            self._instances.sort(
+                key=lambda e: (e.bbox.x0, e.bbox.y1, e.bbox.y0))
         return self
-
 
     def sort_in_line_order(self):
         '''Sort collection instances in a physical with text direction considered, e.g.
             for normal reading direction: from left to right.
         '''
         if self.is_horizontal_text:
-            self._instances.sort(key=lambda e: (e.bbox.x0, e.bbox.y0, e.bbox.x1))
+            self._instances.sort(
+                key=lambda e: (e.bbox.x0, e.bbox.y0, e.bbox.x1))
         else:
-            self._instances.sort(key=lambda e: (e.bbox.y1, e.bbox.x0, e.bbox.y0))
+            self._instances.sort(
+                key=lambda e: (e.bbox.y1, e.bbox.x0, e.bbox.y0))
         return self
 
-   
     def contained_in_bbox(self, bbox):
         '''Filter instances contained in target bbox.
 
         Args:
             bbox  (fitz.Rect): target boundary box.
         '''
-        instances = list(filter(
-            lambda e: bbox.contains(e.bbox), self._instances))
+        instances = list(
+            filter(lambda e: bbox.contains(e.bbox), self._instances))
         return self.__class__(instances)
 
-
-    def split_with_intersection(self, bbox:fitz.Rect, threshold:float=1e-3):
+    def split_with_intersection(self,
+                                bbox: fitz.Rect,
+                                threshold: float = 1e-3):
         """Split instances into two groups: one intersects with ``bbox``, the other not.
 
         Args:
@@ -296,7 +295,7 @@ class ElementCollection(Collection, IText):
         for instance in self._instances:
             # A contains B => A & B = B
             intersection = instance.bbox & bbox
-            factor = round(intersection.getArea()/instance.bbox.getArea(), 2)
+            factor = round(intersection.getArea() / instance.bbox.getArea(), 2)
 
             if factor >= threshold:
                 intersections.append(instance)

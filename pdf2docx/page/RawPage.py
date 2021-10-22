@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''A wrapper of ``fitz.Page`` to do the following work:
 
 * extract source contents
@@ -25,6 +24,7 @@ is described per link https://pymupdf.readthedocs.io/en/latest/textpage.html::
 In addition to the raw layout dict, rectangle shapes are also included.
 '''
 
+import logging
 from collections import defaultdict
 from .BasePage import BasePage
 from ..layout.Layout import Layout
@@ -44,7 +44,6 @@ from ..common.Collection import Collection
 
 class RawPage(BasePage, Layout):
     '''A wrapper of ``fitz.Page`` to extract source contents.'''
-
     def __init__(self, fitz_page=None):
         ''' Initialize page layout.
         
@@ -56,7 +55,6 @@ class RawPage(BasePage, Layout):
 
         self.fitz_page = fitz_page
 
-    
     @property
     def text(self):
         '''All extracted text in this page, with images considered as ``<image>``. 
@@ -68,7 +66,6 @@ class RawPage(BasePage, Layout):
         '''Extracted raw text in current page. Should be run after ``restore()`` data.'''
         return '\n'.join([block.raw_text for block in self.blocks])
 
-
     @debug_plot('Source Text Blocks')
     def restore(self, **settings):
         '''Initialize layout extracted with ``PyMuPDF``.'''
@@ -76,7 +73,6 @@ class RawPage(BasePage, Layout):
         super().restore(raw_dict)
         return self.blocks
 
-    
     @debug_plot('Cleaned Shapes')
     def clean_up(self, **settings):
         '''Clean up raw blocks and shapes, e.g. 
@@ -86,19 +82,16 @@ class RawPage(BasePage, Layout):
         * detect semantic type of shapes
         '''
         # clean up blocks first
-        self.blocks.clean_up(
-            settings['delete_end_line_hyphen'],
-            settings['float_image_ignorable_gap'])
+        self.blocks.clean_up(settings['delete_end_line_hyphen'],
+                             settings['float_image_ignorable_gap'])
 
-        # clean up shapes        
-        self.shapes.clean_up(
-            settings['max_border_width'],
-            settings['shape_min_dimension'])
-        
+        # clean up shapes
+        self.shapes.clean_up(settings['max_border_width'],
+                             settings['shape_min_dimension'])
+
         return self.shapes
 
-
-    def process_font(self, fonts:Fonts, default_font:Font):      
+    def process_font(self, fonts: Fonts, default_font: Font):
         '''Update font properties, e.g. font name, font line height ratio, of ``TextSpan``.
         
         Args:
@@ -108,14 +101,15 @@ class RawPage(BasePage, Layout):
         spans = []
         for block in self.blocks:
             for line in block.lines:
-                spans.extend([span for span in line.spans if isinstance(span, TextSpan)])
+                spans.extend([
+                    span for span in line.spans if isinstance(span, TextSpan)
+                ])
 
         # check and update font name, line height
         for span in spans:
             font = fonts.get(span.font, default_font)
             span.font = font.name
             span.line_height = font.line_height * span.size
-
 
     def calculate_margin(self, **settings):
         """Calculate page margin.
@@ -124,9 +118,11 @@ class RawPage(BasePage, Layout):
             Ensure this method is run right after cleaning up the layout, so the page margin is 
             calculated based on valid layout, and stay constant.
         """
-        # Exclude hyperlink from shapes because hyperlink might exist out of page unreasonablely, 
+        # Exclude hyperlink from shapes because hyperlink might exist out of page unreasonablely,
         # while it should always within page since attached to text.
-        shapes = Shapes([shape for shape in self.shapes if not isinstance(shape, Hyperlink)])
+        shapes = Shapes([
+            shape for shape in self.shapes if not isinstance(shape, Hyperlink)
+        ])
 
         # return default margin if no blocks exist
         if not self.blocks and not shapes: return (constants.ITP, ) * 4
@@ -135,22 +131,20 @@ class RawPage(BasePage, Layout):
         u0, v0, u1, v1 = self.blocks.bbox | shapes.bbox
 
         # margin
-        left = max(u0-x0, 0.0)
-        right = max(x1-u1-constants.MINOR_DIST, 0.0)
-        top = max(v0-y0, 0.0)
-        bottom = max(y1-v1, 0.0)
+        left = max(u0 - x0, 0.0)
+        right = max(x1 - u1 - constants.MINOR_DIST, 0.0)
+        top = max(v0 - y0, 0.0)
+        bottom = max(y1 - v1, 0.0)
 
         # reduce calculated top/bottom margin to leave some free space
         top *= settings['page_margin_factor_top']
         bottom *= settings['page_margin_factor_bottom']
 
         # use normal margin if calculated margin is large enough
-        return (
-            min(constants.ITP, round(left, 1)), 
-            min(constants.ITP, round(right, 1)), 
-            min(constants.ITP, round(top, 1)), 
-            min(constants.ITP, round(bottom, 1)))
-
+        return (min(constants.ITP,
+                    round(left, 1)), min(constants.ITP, round(right, 1)),
+                min(constants.ITP,
+                    round(top, 1)), min(constants.ITP, round(bottom, 1)))
 
     def parse_section(self, **settings):
         '''Detect and create page sections.
@@ -160,31 +154,34 @@ class RawPage(BasePage, Layout):
             - Page margin must be parsed before this step.
         '''
         # bbox
-        X0, Y0, X1, _ = self.working_bbox        
-    
+        X0, Y0, X1, _ = self.working_bbox
+
         # collect all blocks and shapes
         elements = Collection()
         elements.extend(self.blocks)
         elements.extend(self.shapes)
+
         if not elements: return
-        
+
         pre_section = Collection()
         pre_num_col = 1
-        y_ref = Y0 # to calculate v-distance between sections
+        y_ref = Y0  # to calculate v-distance between sections
         sections = []
 
         def create_pre_section(num_col, elements, y_ref):
             # append to pre-pre-section if both single column
-            if sections and sections[-1].num_cols==num_col==1:
-                column = sections[-1][0] # type: Column
+            if sections and sections[-1].num_cols == num_col == 1:
+                column = sections[-1][0]  # type: Column
                 column.union_bbox(elements)
                 column.add_elements(elements)
             # otherwise, create new section
             else:
-                section = self._create_section(num_col, elements, (X0, X1), y_ref)
+                section = self._create_section(num_col, elements, (X0, X1),
+                                               y_ref)
                 if section: sections.append(section)
 
         # check section row by row
+        logging.info("start group_by_rows in RawPage.parse_section on elements count: %d" % len(elements))
         for row in elements.group_by_rows():
             # check column col by col
             cols = row.group_by_columns()
@@ -200,30 +197,30 @@ class RawPage(BasePage, Layout):
 
             # process exception
             x0, y0, x1, y1 = pre_section.bbox
-            if pre_num_col==2 and current_num_col==1:
+            if pre_num_col == 2 and current_num_col == 1:
                 # current row belongs to left column?
                 cols = pre_section.group_by_columns()
                 if row.bbox[2] <= cols[0].bbox[2]:
                     current_num_col = 2
-                
+
                 # further check 2-cols -> the height
-                elif y1-y0<settings['min_section_height']:
+                elif y1 - y0 < settings['min_section_height']:
                     pre_num_col = 1
 
-            elif pre_num_col==2 and current_num_col==2:
+            elif pre_num_col == 2 and current_num_col == 2:
                 # current 2-cols not align with pre-section ?
                 combine = Collection(pre_section)
                 combine.extend(row)
-                if len(combine.group_by_columns())==1:
+                if len(combine.group_by_columns()) == 1:
                     current_num_col = 1
 
             # finalize pre-section if different to current section
-            if current_num_col!=pre_num_col:
+            if current_num_col != pre_num_col:
                 # process pre-section
                 create_pre_section(pre_num_col, pre_section, y_ref)
                 if sections: y_ref = sections[-1][-1].bbox[3]
 
-                # start potential new section                
+                # start potential new section
                 pre_section = Collection(row)
                 pre_num_col = current_num_col
 
@@ -236,7 +233,6 @@ class RawPage(BasePage, Layout):
 
         return sections
 
-
     def extract_raw_dict(self, **settings):
         '''Extract source data from page by ``PyMuPDF``.'''
         if not self.fitz_page: return {}
@@ -246,22 +242,21 @@ class RawPage(BasePage, Layout):
         # https://pymupdf.readthedocs.io/en/latest/page.html#modifying-pages
         raw_layout = self.fitz_page.getText('rawdict')
 
-        # page size: though 'width', 'height' are contained in `raw_dict`, 
-        # they are based on un-rotated page. So, update page width/height 
+        # page size: though 'width', 'height' are contained in `raw_dict`,
+        # they are based on un-rotated page. So, update page width/height
         # to right direction in case page is rotated
-        *_, w, h = self.fitz_page.rect # always reflecting page rotation
-        raw_layout.update({ 'width' : w, 'height': h })
+        *_, w, h = self.fitz_page.rect  # always reflecting page rotation
+        raw_layout.update({'width': w, 'height': h})
         self.width, self.height = w, h
 
         # pre-processing for layout blocks and shapes based on parent page
         self._preprocess_images(raw_layout, **settings)
         self._preprocess_shapes(raw_layout, **settings)
-       
+
         # Element is a base class processing coordinates, so set rotation matrix globally
         Element.set_rotation_matrix(self.fitz_page.rotationMatrix)
 
         return raw_layout
-
 
     def _preprocess_images(self, raw, **settings):
         '''Adjust image blocks. 
@@ -287,13 +282,13 @@ class RawPage(BasePage, Layout):
         image_blocks_group = defaultdict(list)
         for block in raw['blocks']:
             if block['type'] != 1: continue
-            block['type'] = -1 # "delete" it temporally
+            block['type'] = -1  # "delete" it temporally
             image_blocks_group[hash(block['image'])].append(block)
-        
+
         def same_images(img, img_list):
             bbox = list(map(round, img['bbox']))
             for _img in img_list:
-                if list(map(round, _img['bbox']))==bbox: return True
+                if list(map(round, _img['bbox'])) == bbox: return True
             return False
 
         # An example to show complicated things here:
@@ -306,14 +301,13 @@ class RawPage(BasePage, Layout):
             for k, image_blocks in image_blocks_group.items():
                 if not same_images(image, image_blocks): continue
                 for image_block in image_blocks:
-                    image_block['type'] = 1 # add it back
+                    image_block['type'] = 1  # add it back
                     image_block['image'] = image['image']
                 break
 
             # an image outside the page is not counted in page.getText(), so let's add it here
             else:
                 raw['blocks'].append(image)
-
 
     @debug_plot('Source Paths')
     def _preprocess_shapes(self, raw, **settings):
@@ -323,13 +317,16 @@ class RawPage(BasePage, Layout):
 
         # iso-oriented paths to shapes
         paths = Paths(parent=self).restore(raw_paths)
-        shapes, iso_areas, exist_svg = paths.to_shapes(settings['curve_path_ratio'])
+        shapes, iso_areas, exist_svg = paths.to_shapes(
+            settings['curve_path_ratio'])
         raw['shapes'] = shapes
 
         # vector graphics (curved paths in general) to images
         if exist_svg:
             excluding_areas = iso_areas
-            excluding_areas.extend([block['bbox'] for block in raw['blocks'] if block['type']==1]) # normal images
+            excluding_areas.extend([
+                block['bbox'] for block in raw['blocks'] if block['type'] == 1
+            ])  # normal images
             images = ImagesExtractor(self.fitz_page) \
                 .extract_vector_graphics(excluding_areas, settings['clip_image_res_ratio'])
             raw['blocks'].extend(images)
@@ -339,7 +336,6 @@ class RawPage(BasePage, Layout):
         raw['shapes'].extend(hyperlinks)
 
         return paths
-    
 
     @staticmethod
     def _preprocess_hyperlinks(page):
@@ -353,23 +349,23 @@ class RawPage(BasePage, Layout):
         """
         hyperlinks = []
         for link in page.getLinks():
-            if link['kind']!=2: continue # consider internet address only
+            if link['kind'] != 2: continue  # consider internet address only
             hyperlinks.append({
                 'type': RectType.HYPERLINK.value,
                 'bbox': tuple(link['from']),
-                'uri' : link['uri']
+                'uri': link['uri']
             })
 
         return hyperlinks
 
-
     @staticmethod
-    def _create_section(num_col:int, elements:Collection, h_range:tuple, y_ref:float):
+    def _create_section(num_col: int, elements: Collection, h_range: tuple,
+                        y_ref: float):
         '''Create section based on column count, candidate elements and horizontal boundary.'''
         if not elements: return
         X0, X1 = h_range
 
-        if num_col==1:
+        if num_col == 1:
             x0, y0, x1, y1 = elements.bbox
             column = Column().update_bbox((X0, y0, X1, y1))
             column.add_elements(elements)
@@ -379,7 +375,7 @@ class RawPage(BasePage, Layout):
             cols = elements.group_by_columns()
             u0, v0, u1, v1 = cols[0].bbox
             m0, n0, m1, n1 = cols[1].bbox
-            u = (u1+m0)/2.0
+            u = (u1 + m0) / 2.0
 
             column_1 = Column().update_bbox((X0, v0, u, v1))
             column_1.add_elements(elements)
@@ -392,5 +388,3 @@ class RawPage(BasePage, Layout):
 
         section.before_space = round(before_space, 1)
         return section
-                
-

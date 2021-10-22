@@ -27,6 +27,7 @@ class Pages(BaseCollection):
         # ---------------------------------------------
         # 1. extract and then clean up raw page
         # ---------------------------------------------
+        logging.info("2.1. extract and then clean up raw page")
         pages, raw_pages = [], []
         words_found = False
         for page in self:
@@ -34,6 +35,8 @@ class Pages(BaseCollection):
 
             # init and extract data from PDF
             raw_page = RawPage(fitz_page=fitz_doc[page.id])
+
+            '''Initialize layout extracted with ``PyMuPDF``.'''
             raw_page.restore(**settings)
 
             # check if any words are extracted since scanned pdf may be directed
@@ -44,7 +47,7 @@ class Pages(BaseCollection):
             raw_page.clean_up(**settings)
 
             # process font properties
-            raw_page.process_font(fonts, default_font)            
+            raw_page.process_font(fonts, default_font)
 
             # after this step, we can get some basic properties
             # NOTE: floating images are detected when cleaning up blocks, so collect them here
@@ -66,6 +69,7 @@ class Pages(BaseCollection):
         # NOTE: blocks structure might be changed in this step, e.g. promote page header/footer,
         # so blocks structure based process, e.g. calculating margin, parse section should be 
         # run after this step.
+        logging.info("2.2. parse structure in document/pages level")
         header, footer = Pages._parse_document(raw_pages)
 
 
@@ -73,6 +77,7 @@ class Pages(BaseCollection):
         # 3. parse structure in page level, e.g. page margin, section
         # ---------------------------------------------
         # parse sections
+        logging.info("2.3. parse structure in page level, e.g. page margin, section")
         for page, raw_page in zip(pages, raw_pages):
             # page margin
             margin = raw_page.calculate_margin(**settings)
