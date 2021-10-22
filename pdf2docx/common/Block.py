@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''Base class for text/image/table blocks.
 '''
 
@@ -15,7 +14,7 @@ class Block(Element):
         raw (dict): initialize object from raw properties.
         parent (optional): parent object that this block belongs to.
     '''
-    def __init__(self, raw:dict=None, parent=None):        
+    def __init__(self, raw: dict = None, parent=None):
         self._type = BlockType.UNDEFINED
 
         # horizontal spacing
@@ -26,31 +25,30 @@ class Block(Element):
         self.first_line_space = raw.get('first_line_space', 0.0)
 
         # RELATIVE position of tab stops
-        self.tab_stops = raw.get('tab_stops', []) 
+        self.tab_stops = raw.get('tab_stops', [])
 
         # vertical spacing
         self.before_space = raw.get('before_space', 0.0)
-        self.after_space = raw.get('after_space', 0.0)        
+        self.after_space = raw.get('after_space', 0.0)
         self.line_space = raw.get('line_space', 0.0)
 
         super().__init__(raw, parent)
 
-
     @property
     def is_text_block(self):
-        '''Whether test block.'''        
-        return self._type==BlockType.TEXT    
-    
+        '''Whether test block.'''
+        return self._type == BlockType.TEXT
+
     @property
     def is_inline_image_block(self):
         '''Whether inline image block.'''
-        return self._type==BlockType.IMAGE
-    
+        return self._type == BlockType.IMAGE
+
     @property
     def is_float_image_block(self):
         '''Whether float image block.'''
-        return self._type==BlockType.FLOAT_IMAGE
-    
+        return self._type == BlockType.FLOAT_IMAGE
+
     @property
     def is_image_block(self):
         '''Whether inline or float image block.'''
@@ -64,12 +62,12 @@ class Block(Element):
     @property
     def is_lattice_table_block(self):
         '''Whether lattice table (explicit table borders) block.'''
-        return self._type==BlockType.LATTICE_TABLE
+        return self._type == BlockType.LATTICE_TABLE
 
     @property
     def is_stream_table_block(self):
         '''Whether stream table (implied by table content) block.'''
-        return self._type==BlockType.STREAM_TABLE
+        return self._type == BlockType.STREAM_TABLE
 
     @property
     def is_table_block(self):
@@ -96,9 +94,9 @@ class Block(Element):
         '''Set block type.'''
         self._type = BlockType.STREAM_TABLE
 
-    def _get_alignment(self, mode:int):
+    def _get_alignment(self, mode: int):
         for t in TextAlignment:
-            if t.value==mode:
+            if t.value == mode:
                 return t
         return TextAlignment.LEFT
 
@@ -116,8 +114,7 @@ class Block(Element):
         self.alignment = TextAlignment.LEFT
         self.left_space = (self.bbox[idx] - bbox[idx]) * f
 
-
-    def compare(self, block, threshold:float=0.9):
+    def compare(self, block, threshold: float = 0.9):
         """Whether has same bbox and vertical spacing with given block.
 
         Args:
@@ -142,33 +139,30 @@ class Block(Element):
         for key, value in self.__dict__.items():
             if not 'space' in key: continue
             target_value = getattr(block, key)
-            if abs(value-target_value)>constants.TINY_DIST:
+            if abs(value - target_value) > constants.TINY_DIST:
                 return False, f'Inconsistent {" ".join(key.split("_"))} @ {self.bbox}:\n{value} v.s. {target_value} (expected)'
 
         return True, ''
-        
 
     def store(self):
         '''Store attributes in json format.'''
         res = super().store()
         res.update({
-            'type'             : self._type.value,
-            'alignment'        : self.alignment.value,
-            'left_space'       : self.left_space,
-            'right_space'      : self.right_space,
-            'first_line_space' : self.first_line_space,
-            'before_space'     : self.before_space,
-            'after_space'      : self.after_space,
-            'line_space'       : self.line_space,
-            'tab_stops'        : self.tab_stops
-            })
+            'type': self._type.value,
+            'alignment': self.alignment.value,
+            'left_space': self.left_space,
+            'right_space': self.right_space,
+            'first_line_space': self.first_line_space,
+            'before_space': self.before_space,
+            'after_space': self.after_space,
+            'line_space': self.line_space,
+            'tab_stops': self.tab_stops
+        })
         return res
-
 
     def is_flow_layout(self, *args):
         ''' Check whether flow layout, True by default. Override in :obj:`pdf2docx.text.TextBlock`.'''
         return True
-
 
     def make_docx(self, *args, **kwargs):
         """Create associated docx element.
