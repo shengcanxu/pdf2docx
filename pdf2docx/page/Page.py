@@ -155,7 +155,7 @@ class Page(BasePage):
             page or restored from parsed data.
         '''
         # table blocks
-        collections = []        
+        collections = []
         for section in self.sections:
             for column in section:
                 if settings['extract_stream_table']:
