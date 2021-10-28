@@ -50,22 +50,11 @@ class TextSpan(Element):
         self.line_height = raw.get('line_height', 1.2*self.size)
 
         # flags” is an integer, which represents font properties except for the first bit 0. They are to be interpreted like this:
-        #
-        # bit
         # 0: superscripted(20) – not a
-        # font
-        # property, detected
-        # by
-        # MuPDF
-        # code.
-        # bit
-        # 1: italic(21)
-        # bit
-        # 2: serifed(22)
-        # bit
-        # 3: monospaced(23)
-        # bit
-        # 4: bold(24)
+        # 1: italic(2^1)
+        # 2: serifed(2^2)
+        # 3: monospaced(2^3)
+        # 4: bold(2^4)
         self.flags = raw.get('flags', 0)
         self._text = raw.get('text', '') # "text" is not an original key from PyMuPDF
         self.chars = [ Char(c) for c in raw.get('chars', []) ] # type: list[Char]

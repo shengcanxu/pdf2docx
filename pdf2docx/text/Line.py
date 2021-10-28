@@ -16,6 +16,8 @@ Data structure of line in text block referring to this
 
 from fitz import Point
 from collections import Iterable
+
+import pdf2docx
 from .TextSpan import TextSpan
 from ..common.Element import Element
 from ..common.share import TextDirection
@@ -67,6 +69,29 @@ class Line(Element):
         spans_text = [span.text for span in self.spans if isinstance(span, TextSpan)]
         return ''.join(spans_text)
 
+
+    @property
+    def is_bold_line(self):
+        for span in self.spans:
+            if not isinstance(span, TextSpan): return False
+            if not bool(span.flags & 2**4): return False
+        return True
+
+
+    @property
+    def indent_space(self):
+        '''line 距离page边的距离'''
+        page = self
+        while not isinstance(page, pdf2docx.page.Page.Page):
+            if page is None: return 10000
+            page = page.parent
+        return self.bbox.x0 - page.margin[0]
+
+
+    @property
+    def font_size(self):
+        sizes = [span.size for span in self.spans if isinstance(span, TextSpan)]
+        return max(sizes) if len(sizes) > 0 else 0
 
     @property
     def white_space_only(self):
@@ -144,6 +169,7 @@ class Line(Element):
             'dir'       : self.dir,
             'line_break': self.line_break,
             'tab_stop'  : self.tab_stop,
+            'text'      : self.text,
             'spans'     : [
                 span.store() for span in self.spans
             ]
