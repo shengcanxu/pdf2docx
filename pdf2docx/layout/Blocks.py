@@ -97,10 +97,6 @@ class Blocks(ElementCollection):
             # add to list
             self.append(block)
 
-        # remove the elememts that width and height are both less than 2 pixels
-        f = lambda block: not (block.is_inline_image_block and block.bbox.width < 2 and block.bbox.height < 2)
-        self.reset(filter(f, self))
-
         return self
 
     def clean_up(self, delete_end_line_hyphen: bool,
@@ -116,7 +112,7 @@ class Blocks(ElementCollection):
 
         .. note::
             This method works ONLY for layout initialized from raw dict extracted by ``page.getText()``.
-            Under this circumstance, it only exists text blocks since all raw image blocks are converted to 
+            Under this circumstance, it only exists text blocks since all raw image blocks are converted to
             text blocks.
         """
         if not self._instances: return
@@ -125,7 +121,12 @@ class Blocks(ElementCollection):
         f = lambda block:   block.bbox.intersects(page_bbox) and \
                             not block.white_space_only and (
                             block.is_horizontal_text or block.is_vertical_text)
-        self.reset(filter(f, self._instances))
+        block_list = filter(f, self._instances)
+
+        # remove the elememts that width and height are both less than 2 pixels
+        f = lambda block: not (block.is_inline_image_block and block.bbox.width < 2 and block.bbox.height < 2)
+        block_list = filter(f, block_list)
+        self.reset(block_list)
 
         # sort
         self.strip(delete_end_line_hyphen) \
