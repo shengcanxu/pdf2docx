@@ -86,6 +86,8 @@ class Converter:
             4.0,  # total condense spacing (in Pt) at end of line to avoid unexpected line break
             'line_merging_threshold':
             2.0,  # combine two lines if the x-distance is lower than this value
+            'textline_merging_threshold':
+            20.0, # combine two lines of TextBlock if the x-distance is lower than this value
             'line_separate_threshold':
             5.0,  # two separate lines if the x-distance exceeds this value
             'new_paragraph_free_space_ratio':

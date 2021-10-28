@@ -54,7 +54,38 @@ class Lines(ElementCollection):
             spans.extend(line.image_spans)
         return spans
 
-    
+
+    def join_textlines(self, textline_merging_threshold:float):
+        '''Merge lines of TextBlock aligned horizontally '''
+        # skip if empty
+        if not self._instances: return self
+
+        self.sort()
+
+        # merge lines
+        def get_merged_line(candidates):
+            line = candidates[0]
+            for c_line in candidates[1:]:
+                line.add(c_line.spans)
+            return line
+
+        lines = Lines()
+        candidates = [self._instances[0]]  # first line
+        for i in range(1, len(self._instances)):
+            pre_line, pos_line = self._instances[i-1], self._instances[i]
+
+            if pos_line.in_same_row(pre_line) and \
+                abs(pos_line.bbox.x0-pre_line.bbox.x1) <= textline_merging_threshold:
+                candidates.append(pos_line)
+            else:
+                # merge lines
+                lines.append(get_merged_line(candidates))
+                candidates = [pos_line]
+
+        lines.append(get_merged_line(candidates))
+        self.reset(lines)
+
+
     def join(self, line_overlap_threshold:float, line_merging_threshold:float):
         '''Merge lines aligned horizontally, e.g. make inline image as a span in text line.'''
         # skip if empty

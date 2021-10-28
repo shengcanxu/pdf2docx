@@ -188,7 +188,11 @@ class Collection(BaseCollection):
     def group_by_physical_rows(self):
         '''Group lines into physical rows.'''
         fun = lambda a, b: a.in_same_row(b)
-        return self.group(fun)
+        groups = self.group(fun)
+
+        # NOTE: increasing in y-direction is required!
+        groups.sort(key=lambda group: group.bbox.y0)
+        return groups
 
 
 class ElementCollection(Collection, IText):

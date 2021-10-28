@@ -115,6 +115,10 @@ class Layout:
         for block in filter(lambda e: e.is_table_block, self.blocks):
             block.parse(**settings)
 
+        # order lines inside block and combine lines in the same line(similar y)
+        for block in filter(lambda  e: e.is_text_block, self.blocks):
+            block.lines.join_textlines(settings["textline_merging_threshold"])
+
 
     def _assign_block(self, block):
         '''Add block to this layout. 

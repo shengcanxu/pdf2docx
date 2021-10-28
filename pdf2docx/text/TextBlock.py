@@ -27,6 +27,8 @@ Data structure based on this `link <https://pymupdf.readthedocs.io/en/latest/tex
 
 from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+from .Line import Line
 from .Lines import Lines
 from ..image.ImageSpan import ImageSpan
 from ..common.share import RectType, TextDirection, TextAlignment
