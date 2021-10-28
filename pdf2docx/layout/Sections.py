@@ -16,7 +16,7 @@ class Sections(BaseCollection):
         """Restore sections from source dicts."""        
         self.reset()
         for raw in raws:
-            section = Section().restore(raw)
+            section = Section(parent=self.parent).restore(raw)
             self.append(section)
         return self
     

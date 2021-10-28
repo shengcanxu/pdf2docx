@@ -64,7 +64,7 @@ class Section(BaseCollection):
 
         # get each column
         for raw_col in raw.get('columns', []):
-            column = Column().restore(raw_col)
+            column = Column(parent=self).restore(raw_col)
             self.append(column)
 
         return self

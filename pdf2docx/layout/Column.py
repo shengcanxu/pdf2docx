@@ -30,12 +30,13 @@ from ..shape.Shape import Shape
 
 class Column(Element, Layout):
 
-    def __init__(self, blocks=None, shapes=None):
+    def __init__(self, blocks=None, shapes=None, parent=None):
         '''Initialize empty column.'''
         # Call the first parent class constructor only if omitting constructor. 
         # Unified constructor should be used (with *args, **kwargs) if using super().__init__().
         Element.__init__(self)
         Layout.__init__(self, blocks, shapes)
+        self._parent = parent
 
 
     @property
