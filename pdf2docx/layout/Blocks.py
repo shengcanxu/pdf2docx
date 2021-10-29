@@ -124,7 +124,7 @@ class Blocks(ElementCollection):
                             not block.white_space_only and (
                             block.is_horizontal_text or block.is_vertical_text) and \
                             max(block.bbox.width, block.bbox.height) >= block_min_dimension
-        block_list = filter(f, self._instances)
+        block_list = list(filter(f, self._instances))
         self.reset(block_list)
 
         # sort
