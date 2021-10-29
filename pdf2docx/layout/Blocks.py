@@ -100,7 +100,8 @@ class Blocks(ElementCollection):
         return self
 
     def clean_up(self, delete_end_line_hyphen: bool,
-                 float_image_ignorable_gap: float):
+                 float_image_ignorable_gap: float,
+                 block_min_dimension: float):
         """Clean up blocks in page level.
 
         * remove blocks out of page
@@ -117,15 +118,13 @@ class Blocks(ElementCollection):
         """
         if not self._instances: return
 
+        # remove the elememts that width and height are both less than block_min_dimension
         page_bbox = self.parent.working_bbox
         f = lambda block:   block.bbox.intersects(page_bbox) and \
                             not block.white_space_only and (
-                            block.is_horizontal_text or block.is_vertical_text)
+                            block.is_horizontal_text or block.is_vertical_text) and \
+                            max(block.bbox.width, block.bbox.height) >= block_min_dimension
         block_list = filter(f, self._instances)
-
-        # remove the elememts that width and height are both less than 2 pixels
-        f = lambda block: not (block.is_inline_image_block and block.bbox.width < 2 and block.bbox.height < 2)
-        block_list = filter(f, block_list)
         self.reset(block_list)
 
         # sort
