@@ -8,6 +8,8 @@ from ..common.Collection import ElementCollection
 from ..common.share import BlockType, rgb_value
 from ..common.Block import Block
 from ..common.docx import reset_paragraph_format, delete_paragraph
+from ..shape.Shape import Stroke
+from ..shape.Shapes import Shapes
 from ..text.TextBlock import TextBlock
 from ..text.Line import Line
 from ..text.Lines import Lines
@@ -101,7 +103,7 @@ class Blocks(ElementCollection):
 
     def clean_up(self, delete_end_line_hyphen: bool,
                  float_image_ignorable_gap: float,
-                 block_min_dimension: float):
+                 dash_max_dimension: float):
         """Clean up blocks in page level.
 
         * remove blocks out of page
@@ -122,15 +124,89 @@ class Blocks(ElementCollection):
         page_bbox = self.parent.working_bbox
         f = lambda block:   block.bbox.intersects(page_bbox) and \
                             not block.white_space_only and (
-                            block.is_horizontal_text or block.is_vertical_text) and \
-                            max(block.bbox.width, block.bbox.height) >= block_min_dimension
+                            block.is_horizontal_text or block.is_vertical_text) # and \
+                            # max(block.bbox.width, block.bbox.height) >= block_min_dimension
         block_list = list(filter(f, self._instances))
         self.reset(block_list)
+
+        # pyMuPDF会将虚线变成非常多的<TextBlok <ImageSpan/> />, 需要将它们变回Stroke 并放回到shapes里面去
+        self._cleanup_dash(dash_max_dimension)
 
         # sort
         self.strip(delete_end_line_hyphen) \
             .sort_in_reading_order() \
             .identify_floating_images(float_image_ignorable_gap)
+
+
+    def _cleanup_dash(self, dash_max_dimension:float):
+        # 不用 group_by_physical_rows() 是因为太慢了
+        f = lambda block: block.is_image_block and max(block.bbox.width, block.bbox.height) <= dash_max_dimension
+        notf = lambda block: not (block.is_image_block and max(block.bbox.width, block.bbox.height) <= dash_max_dimension)
+        image_blocks = list(filter(f, self._instances))
+        blocks = Blocks()
+        blocks.reset(image_blocks)
+
+        def _fast_group(blocks, is_horizontal:float):
+            idx = 0 if is_horizontal else 1
+            for block in blocks:
+                block.temp = -1
+
+            num = len(blocks)
+            groups = []
+            for i, block in enumerate(blocks):
+                if block.temp == -2: continue
+
+                block.temp = -2
+                start_block = last_block = block
+                group = Blocks()
+                group.append(start_block)
+                for j in range(i + 1, num):
+                    next_block = blocks[j]
+
+                    is_align = start_block.in_same_row(next_block) if is_horizontal else start_block.in_same_column(next_block)
+                    if is_align:
+                        next_block.temp = -2
+                        if abs(next_block.bbox[idx] - last_block.bbox[idx+2]) <= dash_max_dimension:  #大于dash_max_dimension，认为是已经结束这条dash
+                            group.append(next_block)
+                            last_block = next_block
+                        else:
+                            groups.append(group)
+                            start_block = last_block = next_block
+                            group = Blocks()
+                            group.append(start_block)
+
+                    if (is_horizontal and next_block.bbox.y0 > start_block.bbox.y1) \
+                            or (not is_horizontal and next_block.bbox.x0 > start_block.bbox.x1): break
+                groups.append(group)
+
+            return groups
+
+        # 从分组中提取出所有的dash stroke, group 是已经排序过的了
+        def _create_stroke(groups):
+            strokes = Shapes()
+            for group in groups:
+                if not group or len(group) == 0: continue
+
+                width = max(group.bbox.width, group.bbox.height)
+                height = min(group.bbox.width, group.bbox.height)
+                if width >= dash_max_dimension * 4:
+                    stroke = Stroke({'width': height}).update_bbox(group.bbox)
+                    strokes.append(stroke)
+                    print(stroke.bbox)
+
+            return strokes
+
+        # 将同一行的group起来。先排序一下，就可以加快扫描速度，遇到不符合条件的，就可以直接跳过后面的所有的扫描了
+        blocks.sort_in_reading_order()
+        groups = _fast_group(blocks, is_horizontal=True)
+        strokes = _create_stroke(groups)
+        blocks.sort_in_line_order()
+        groups = _fast_group(blocks, is_horizontal=False)
+        strokes.extend(_create_stroke(groups))
+
+        self.reset(list(filter(notf, self._instances)))
+        self.parent.shapes.extend(strokes)
+
 
     def strip(self, delete_end_line_hyphen: bool):
         '''Remove redundant blanks exist in text block lines. These redundant blanks may affect bbox of text block.

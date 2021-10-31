@@ -36,7 +36,7 @@ class Pages(BaseCollection):
             # init and extract data from PDF
             raw_page = RawPage(fitz_page=fitz_doc[page.id])
 
-            '''Initialize layout extracted with ``PyMuPDF``.'''
+            '''Initialize layout extracted with ``PyMuPDF``. PDF文件的信息是从这里获取到raw_page用于后面分析的'''
             raw_page.restore(**settings)
 
             # check if any words are extracted since scanned pdf may be directed

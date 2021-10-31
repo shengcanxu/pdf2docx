@@ -288,6 +288,19 @@ class Element(IText):
         return res
 
 
+    def in_same_column(self, e):
+        if not e or self.text_direction != e.text_direction:
+            return False
+
+        # normal reading direction by default
+        idx = 0 if self.is_horizontal_text else 1
+
+        c1 = (self.bbox[idx] + self.bbox[idx + 2]) / 2.0
+        c2 = (e.bbox[idx] + e.bbox[idx + 2]) / 2.0
+        res = c1 <= e.bbox[idx + 2] and c2 <= self.bbox[idx + 2]  # Note y direction under PyMuPDF context
+        return res
+
+
     # ------------------------------------------------
     # others
     # ------------------------------------------------

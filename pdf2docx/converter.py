@@ -74,8 +74,8 @@ class Converter:
             0.5,  # [0,1] reduce bottom margin by factor
             'shape_min_dimension':
             2.0,  # ignore shape if both width and height is lower than this value
-            'block_min_dimension':
-            2.0,  # ignore block if both with and height is lower than this value
+            'dash_max_dimension':
+            8.0,  # ignore block if both with and height is lower than this value
             'block_merging_threshold':
             0.5,  # merge single line blocks when vertical distance is smaller than this value * block height
             'line_overlap_threshold':

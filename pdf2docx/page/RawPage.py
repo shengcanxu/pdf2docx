@@ -31,7 +31,7 @@ from ..layout.Layout import Layout
 from ..layout.Section import Section
 from ..layout.Column import Column
 from ..shape.Shape import Hyperlink
-from ..shape.Shapes import Shapes
+from ..shape.Shapes import Shapes, Stroke
 from ..image.ImagesExtractor import ImagesExtractor
 from ..shape.Paths import Paths
 from ..font.Fonts import Font, Fonts
@@ -83,7 +83,8 @@ class RawPage(BasePage, Layout):
         '''
         # clean up blocks first
         self.blocks.clean_up(settings['delete_end_line_hyphen'],
-                             settings['float_image_ignorable_gap'])
+                             settings['float_image_ignorable_gap'],
+                             settings['dash_max_dimension'])
 
         # clean up shapes
         self.shapes.clean_up(settings['max_border_width'],
@@ -146,13 +147,9 @@ class RawPage(BasePage, Layout):
                 min(constants.ITP,
                     round(top, 1)), min(constants.ITP, round(bottom, 1)))
 
+    # TODO 原分区算法如果出现数据错乱，出现有两行表格里面的同一行两段文字不是变成TexbBlock的两个line而是变成两个TextBlock，就会错误的分成两个Section。
+    # 暂时的解决方法是屏蔽掉原来的代码，固定将Page写死成为一个Section和一个Column
     def parse_section(self, **settings):
-        '''Detect and create page sections.
-
-        .. note::
-            - Only two-columns Sections are considered for now.
-            - Page margin must be parsed before this step.
-        '''
         # bbox
         X0, Y0, X1, _ = self.working_bbox
 
@@ -163,75 +160,99 @@ class RawPage(BasePage, Layout):
 
         if not elements: return
 
-        pre_section = Collection()
-        pre_num_col = 1
         y_ref = Y0  # to calculate v-distance between sections
         sections = []
-
-        def create_pre_section(num_col, elements, y_ref):
-            # append to pre-pre-section if both single column
-            if sections and sections[-1].num_cols == num_col == 1:
-                column = sections[-1][0]  # type: Column
-                column.union_bbox(elements)
-                column.add_elements(elements)
-            # otherwise, create new section
-            else:
-                section = self._create_section(num_col, elements, (X0, X1),
-                                               y_ref)
-                if section: sections.append(section)
-
-        # check section row by row
-        logging.info("start group_by_rows in RawPage.parse_section on elements count: %d" % len(elements))
-        for row in elements.group_by_rows():
-            # check column col by col
-            cols = row.group_by_columns()
-            current_num_col = len(cols)
-
-            # column check:
-            # - consider 2-cols only
-            # - ignore tiny-width column
-            if current_num_col>2 or (
-                current_num_col==2 and \
-                    min(cols[0].bbox.width, cols[1].bbox.width)<=constants.MAJOR_DIST):
-                current_num_col = 1
-
-            # process exception
-            x0, y0, x1, y1 = pre_section.bbox
-            if pre_num_col == 2 and current_num_col == 1:
-                # current row belongs to left column?
-                cols = pre_section.group_by_columns()
-                if row.bbox[2] <= cols[0].bbox[2]:
-                    current_num_col = 2
-
-                # further check 2-cols -> the height
-                elif y1 - y0 < settings['min_section_height']:
-                    pre_num_col = 1
-
-            elif pre_num_col == 2 and current_num_col == 2:
-                # current 2-cols not align with pre-section ?
-                combine = Collection(pre_section)
-                combine.extend(row)
-                if len(combine.group_by_columns()) == 1:
-                    current_num_col = 1
-
-            # finalize pre-section if different to current section
-            if current_num_col != pre_num_col:
-                # process pre-section
-                create_pre_section(pre_num_col, pre_section, y_ref)
-                if sections: y_ref = sections[-1][-1].bbox[3]
-
-                # start potential new section
-                pre_section = Collection(row)
-                pre_num_col = current_num_col
-
-            # otherwise, append to pre-section
-            else:
-                pre_section.extend(row)
-
-        # the final section
-        create_pre_section(current_num_col, pre_section, y_ref)
-
+        section = self._create_section(1, elements, (X0, X1), y_ref)
+        if section: sections.append(section)
         return sections
+
+
+    # def parse_section(self, **settings):
+    #     '''Detect and create page sections.
+    #         算法：对所有的blocks和shapes，先横向分组成行， 然后算每一行可以分成几个列，将同一列数量的行分类一起成为一个section
+    #     .. note::
+    #         - Only two-columns Sections are considered for now.
+    #         - Page margin must be parsed before this step.
+    #     '''
+    #     # bbox
+    #     X0, Y0, X1, _ = self.working_bbox
+    #
+    #     # collect all blocks and shapes
+    #     elements = Collection()
+    #     elements.extend(self.blocks)
+    #     elements.extend(self.shapes)
+    #
+    #     if not elements: return
+    #
+    #     pre_section = Collection()
+    #     pre_num_col = 1
+    #     y_ref = Y0  # to calculate v-distance between sections
+    #     sections = []
+    #
+    #     def create_pre_section(num_col, elements, y_ref):
+    #         # append to pre-pre-section if both single column
+    #         if sections and sections[-1].num_cols == num_col == 1:
+    #             column = sections[-1][0]  # type: Column
+    #             column.union_bbox(elements)
+    #             column.add_elements(elements)
+    #         # otherwise, create new section
+    #         else:
+    #             section = self._create_section(num_col, elements, (X0, X1),
+    #                                            y_ref)
+    #             if section: sections.append(section)
+    #
+    #     # check section row by row
+    #     logging.info("start group_by_rows in RawPage.parse_section on elements count: %d" % len(elements))
+    #     for row in elements.group_by_rows():
+    #         # check column col by col
+    #         cols = row.group_by_columns()
+    #         current_num_col = len(cols)
+    #
+    #         # column check:
+    #         # - consider 2-cols only
+    #         # - ignore tiny-width column
+    #         if current_num_col>2 or (
+    #             current_num_col==2 and \
+    #                 min(cols[0].bbox.width, cols[1].bbox.width)<=constants.MAJOR_DIST):
+    #             current_num_col = 1
+    #
+    #         # process exception
+    #         x0, y0, x1, y1 = pre_section.bbox
+    #         if pre_num_col == 2 and current_num_col == 1:
+    #             # current row belongs to left column?
+    #             cols = pre_section.group_by_columns()
+    #             if row.bbox[2] <= cols[0].bbox[2]:
+    #                 current_num_col = 2
+    #
+    #             # further check 2-cols -> the height
+    #             elif y1 - y0 < settings['min_section_height']:
+    #                 pre_num_col = 1
+    #
+    #         elif pre_num_col == 2 and current_num_col == 2:
+    #             # current 2-cols not align with pre-section ?
+    #             combine = Collection(pre_section)
+    #             combine.extend(row)
+    #             if len(combine.group_by_columns()) == 1:
+    #                 current_num_col = 1
+    #
+    #         # finalize pre-section if different to current section
+    #         if current_num_col != pre_num_col:
+    #             # process pre-section
+    #             create_pre_section(pre_num_col, pre_section, y_ref)
+    #             if sections: y_ref = sections[-1][-1].bbox[3]
+    #
+    #             # start potential new section
+    #             pre_section = Collection(row)
+    #             pre_num_col = current_num_col
+    #
+    #         # otherwise, append to pre-section
+    #         else:
+    #             pre_section.extend(row)
+    #
+    #     # the final section
+    #     create_pre_section(current_num_col, pre_section, y_ref)
+    #
+    #     return sections
 
     def extract_raw_dict(self, **settings):
         '''Extract source data from page by ``PyMuPDF``.'''
@@ -313,7 +334,7 @@ class RawPage(BasePage, Layout):
     def _preprocess_shapes(self, raw, **settings):
         '''Identify iso-oriented paths and convert vector graphic paths to pixmap.'''
         # extract paths ed by `page.getDrawings()`
-        raw_paths = self.fitz_page.getDrawings()
+        raw_paths = self.fitz_page.get_drawings()
 
         # iso-oriented paths to shapes
         paths = Paths(parent=self).restore(raw_paths)
