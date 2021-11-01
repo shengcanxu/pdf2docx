@@ -192,7 +192,6 @@ class Blocks(ElementCollection):
                 if width >= dash_max_dimension * 4:
                     stroke = Stroke({'width': height}).update_bbox(group.bbox)
                     strokes.append(stroke)
-                    print(stroke.bbox)
 
             return strokes
 

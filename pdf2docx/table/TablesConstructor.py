@@ -194,7 +194,8 @@ class TablesConstructor:
                 strokes, **settings).parse(explicit_shadings).to_table_block()
 
             table.set_stream_table_block()
-            tables.append(table)
+            if max(table.num_cols, table.num_rows) > 1:  #(1*1)的table是假的table。
+                tables.append(table)
 
         # assign blocks/shapes to each table
         self._blocks.assign_to_tables(tables)

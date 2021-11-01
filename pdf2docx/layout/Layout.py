@@ -115,7 +115,7 @@ class Layout:
         for block in filter(lambda e: e.is_table_block, self.blocks):
             block.parse(**settings)
 
-        # order lines inside block and combine lines in the same line(similar y)
+        # 有些block会将一行的文字分拆成为两个lines， 为了更好的抽取出pdf文件的目录架构，需要将这些一行内的lines做合并成为一个line
         for block in filter(lambda  e: e.is_text_block, self.blocks):
             block.lines.join_textlines(settings["textline_merging_threshold"])
 
