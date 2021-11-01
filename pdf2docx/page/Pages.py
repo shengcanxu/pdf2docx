@@ -30,7 +30,7 @@ class Pages(BaseCollection):
         logging.info("2.1. extract and then clean up raw page")
         pages, raw_pages = [], []
         words_found = False
-        for page in self:
+        for i, page in enumerate(self):
             if page.skip_parsing: continue
 
             # init and extract data from PDF
@@ -57,6 +57,8 @@ class Pages(BaseCollection):
 
             raw_pages.append(raw_page)
             pages.append(page)
+
+            logging.info("get raw_page No. %d with %d blocks and %d shapes" % (i, len(raw_page.blocks), len(raw_page.shapes)))
 
         # show message if no words found
         if not words_found:

@@ -2,6 +2,7 @@
 
 '''A group of ``Shape`` instances.
 '''
+from fitz import Rect
 
 from .Shape import Shape, Stroke, Fill, Hyperlink
 from ..common.share import RectType, lazyproperty
@@ -112,6 +113,7 @@ class Shapes(ElementCollection):
         cleaned_shapes = list(filter(f, self._instances)) # type: list[Shape]
 
         # merge normal shapes if same filling color
+        # 因为shapes里面除了线条还有很多绘画，如果多个shape是落在差不多相同的位置， 可以只保留第一个shape，避免过多的shape,然后分段的线条也会合并成为一条线条
         merged_shapes = self._merge_shapes(cleaned_shapes)
                 
         # convert Fill instance to Stroke if looks like stroke
@@ -201,10 +203,19 @@ class Shapes(ElementCollection):
         # shapes excluding hyperlink first
         normal_shapes = list(filter(
             lambda shape: not shape.is_determined, shapes))
-        
-        # group by color and connectivity        
-        f = lambda a, b: a.color==b.color and a.bbox & b.bbox
+
+        # 当shapes有很多的时候，group(f)跑的很慢，使用给自己写的判断是否相交的程序加快运算速度
+        def is_intersect(a:Rect, b:Rect):
+            if abs((a.x0 + a.x1) - (b.x0 + b.x1)) < (a.x1 + b.x1) - (a.x0 + b.x0) and abs((a.y0 + a.y1) - (b.y0 + b.y1)) < (a.y1 + b.y1) - (a.y0 + b.y0):
+                return True
+            else:
+                return False
+
+        # group by color and connectivity
+        # f = lambda a, b: a.color == b.color and a.bbox & b.bbox
+        f = lambda a, b: a.color==b.color and is_intersect(a.bbox, b.bbox)
         groups = Collection(normal_shapes).group(f)
+
 
         merged_shapes = []
         for group in groups:

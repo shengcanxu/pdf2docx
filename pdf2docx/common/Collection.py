@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''A group of instances, e.g. Blocks, Lines, Spans, Shapes.
 '''
+import logging
 
 import fitz
 from .Element import Element
@@ -107,6 +108,7 @@ class Collection(BaseCollection):
         index_groups = [set() for i in range(num)]  # type: list[set]
         for i, instance in enumerate(self._instances):
             # connections of current instance to all instances after it
+            # logging.info("round #%d" % i)
             for j in range(i + 1, num):
                 if fun(instance, self._instances[j]):
                     index_groups[i].add(j)
