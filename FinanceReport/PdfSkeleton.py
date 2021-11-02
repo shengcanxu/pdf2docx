@@ -23,65 +23,62 @@ class PdfSkeleton:
         self._pages = pages
 
     def build_skeleton(self):
-        blocks = self._get_skeleton_blocks()
+        (matched_blocks, blocks) = self._get_skeleton_blocks()
+        tree = self._build_tree(blocks)
+        #self._connect_children(tree)
+        tree.print_tree()
 
-        def type_in_parent(type:BlockOrderType, node:BlockNode):
-            while node is not None:
-                if node.block and node.block.order_type == type:
-                    return (True, node.parent)
-                node = node.parent
+    # 将树里面的列表节点左右连接起来
+    def _connect_children(self, tree:BlockTree):
+        node = tree.root
+        def _connect(node):
+            for index, child in enumerate(node.children):
+
+                _connect(child)
+        _connect(node)
+
+    # 根据文本创建pdf文档的树形架构
+    def _build_tree(self, blocks):
+        def type_in_parent(type:BlockOrderType, pnode:BlockNode):
+            if type == BlockOrderType.UNDEFINED: return (False, None)
+            while pnode.block is not None:
+                if pnode.block.order_type == type:
+                    return (True, pnode.parent)
+                pnode = pnode.parent
             return (False, None)
 
         tree = BlockTree()
-        node = tree.root
+        parent = tree.root
         cur_order_type = blocks[0].order_type
         for index, block in enumerate(blocks):
-            print("%s %s" % (block.order_type, block.raw_text))
             type = block.order_type
             if type == cur_order_type:   # 当前层加入
-                node.add_child(block)
+                parent.add_child(block)
             else:
-                (in_parent, parent_node) = type_in_parent(type, node)   # 加入上一层
+                (in_parent, parent_node) = type_in_parent(type, parent)   # 加入上一层
                 if in_parent:
-                    node = parent_node
-                    node.add_child(block)
-                    cur_order_type = block.order_type
+                    parent = parent_node
+                    parent.add_child(block)
+                    cur_order_type = type
                 else:    # 加入下一层
-                    node = node.children[-1]
-                    node.add_child(block)
+                    parent = parent.children[-1]
+                    parent.add_child(block)
                     cur_order_type = type
 
-        tree.print_tree()
-
-
+        return tree
 
 
     def get_skeleton_str(self):
         blocks = self._retrieve_blocks()
         for block in blocks:
             if block.is_text_block:
-                print(block.raw_text)
-            elif block.is_table_block:
-                print("<TABLE>")
-
-
-    # def get_font_size(self):
-    #     blocks = self._pdf_blocks()
-    #     for block in blocks:
-    #         if block.is_text_block:
-    #             print("%f  %s" % (block.font_size, block.raw_text))
-    #         elif block.is_table_block:
-    #             print("<TABLE>")
-
-
-    # def get_indent_space(self):
-    #     blocks = self._pdf_blocks()
-    #     for block in blocks:
-    #         if block.is_text_block:
-    #             print("%f  %s" % (block.indent_space, block.raw_text))
-    #         elif block.is_table_block:
-    #             print("<TABLE>")
-
+                match = re.match(pattern, block.raw_text)
+                if match:
+                    block.order_num = match.group(1)
+                    matched_blocks.append(block)
+                else:
+                    block.order_num = ""
+        return (matched_blocks, blocks)
 
     def _pdf_blocks(self):
         """

@@ -1,4 +1,5 @@
 from pdf2docx.common.Block import Block
+from pdf2docx.common.share import BlockOrderType
 from pdf2docx.text.TextBlock import TextBlock
 
 
@@ -44,5 +45,8 @@ class BlockTree:
     def _print_tree(self, prefix, node):
         cur_prefix = prefix + "    "
         for child in node.children:
-            print("%s%s" % (cur_prefix, child.text))
+            if child.block.is_text_block and child.block.order_type != BlockOrderType.UNDEFINED:
+                print("%s%s" % (cur_prefix, child.text))
+            elif child.block.is_table_block:
+                print("%s<Table>" % cur_prefix)
             self._print_tree(cur_prefix, child)
