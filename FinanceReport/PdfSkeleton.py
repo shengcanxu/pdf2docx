@@ -23,22 +23,31 @@ class PdfSkeleton:
         self._pages = pages
 
     def build_skeleton(self):
-        (matched_blocks, blocks) = self._get_skeleton_blocks()
-        tree = self._build_tree(blocks)
-        #self._connect_children(tree)
+        (skeleton_blocks, blocks) = self._get_skeleton_blocks()
+        tree = self._build_tree(blocks, skeleton_blocks)
+        self._connect_children(tree)
         tree.print_tree()
 
     # 将树里面的列表节点左右连接起来
     def _connect_children(self, tree:BlockTree):
-        node = tree.root
-        def _connect(node):
-            for index, child in enumerate(node.children):
+        def _connect(node:BlockNode):
+            nodes = node.children
+            length = len(nodes)
+            if length == 1: return
 
+            for index, child in enumerate(nodes):
+                if index == 0:
+                    child.next_node = nodes[index+1]
+                elif index == length-1:
+                    child.pre_node = nodes[index-1]
+                else:
+                    child.next_node = nodes[index + 1]
+                    child.pre_node = nodes[index - 1]
                 _connect(child)
-        _connect(node)
+        _connect(tree.root)
 
     # 根据文本创建pdf文档的树形架构
-    def _build_tree(self, blocks):
+    def _build_tree(self, blocks, skeleton_blocks):
         def type_in_parent(type:BlockOrderType, pnode:BlockNode):
             if type == BlockOrderType.UNDEFINED: return (False, None)
             while pnode.block is not None:
@@ -49,7 +58,7 @@ class PdfSkeleton:
 
         tree = BlockTree()
         parent = tree.root
-        cur_order_type = blocks[0].order_type
+        cur_order_type = skeleton_blocks[0].order_type
         for index, block in enumerate(blocks):
             type = block.order_type
             if type == cur_order_type:   # 当前层加入
@@ -61,6 +70,7 @@ class PdfSkeleton:
                     parent.add_child(block)
                     cur_order_type = type
                 else:    # 加入下一层
+                    if len(parent.children) == 0: continue
                     parent = parent.children[-1]
                     parent.add_child(block)
                     cur_order_type = type
@@ -89,5 +99,5 @@ class PdfSkeleton:
         for page in self._pages:
             for section in page.sections:
                 for column in section:
-                    blocks.extend(column.blocks)
+                    blocks.extend(column.blocks.sort_in_reading_order())
         return blocks

@@ -8,6 +8,8 @@ class BlockNode:
         self._block = block
         self._children = []
         self._parent = parent
+        self._pre_node = None
+        self._next_node = None
 
     def add_child(self, block:TextBlock):
         node = BlockNode(block, parent=self)
@@ -16,6 +18,22 @@ class BlockNode:
     @property
     def parent(self):
         return self._parent
+
+    @property
+    def pre_node(self):
+        return self._pre_node
+
+    @pre_node.setter
+    def pre_node(self, node):
+        self._pre_node = node
+
+    @property
+    def next_node(self):
+        return self._next_node
+
+    @next_node.setter
+    def next_node(self, node):
+        self._next_node = node
 
     @property
     def block(self):
