@@ -15,6 +15,17 @@ class BlockType(Enum):
     STREAM_TABLE = 3
     FLOAT_IMAGE = 4
 
+class BlockOrderType(Enum):
+    '''Block Order Type'''
+    UNDEFINED = -1
+    DI_ZI = 1    # 如：第五
+    DI_SHUZI = 2  # 如： 第5
+    ZI_DUN = 3   #  如：五、
+    SHUZI_DUN = 4  # 如：5、
+    ZIMU_DUN = 5  # 如： A、 a、
+    ZI_KUOHAO = 6 # 如：五） (五)
+    SHUZI_KUOHAO = 7 # 如：5）  (5)
+    ZIMU_KUOHAO = 8 # 如：A)  (a)
 
 class RectType(Enum):
     '''Shape type in context.'''

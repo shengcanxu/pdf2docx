@@ -476,6 +476,5 @@ class Converter:
     def _color_output(msg):
         return f'\033[1;36m{msg}\033[0m'
 
-
 class ConversionException(Exception):
     pass

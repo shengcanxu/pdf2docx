@@ -58,7 +58,7 @@ class Pages(BaseCollection):
             raw_pages.append(raw_page)
             pages.append(page)
 
-            logging.info("get raw_page No. %d with %d blocks and %d shapes" % (i, len(raw_page.blocks), len(raw_page.shapes)))
+            # logging.info("get raw_page No. %d with %d blocks and %d shapes" % (i, len(raw_page.blocks), len(raw_page.shapes)))
 
         # show message if no words found
         if not words_found:

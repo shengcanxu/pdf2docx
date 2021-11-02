@@ -81,12 +81,12 @@ class Line(Element):
     @property
     def indent_space(self):
         '''line 距离page边的距离'''
-        page = self
-        while not isinstance(page, pdf2docx.page.Page.Page):
-            if page is None: return 10000
-            page = page.parent
-        return self.bbox.x0 - page.margin[0]
-
+        # page = self
+        # while not isinstance(page, pdf2docx.page.Page.Page):
+        #     if page is None: return 10000
+        #     page = page.parent
+        # return self.bbox.x0 - page.margin[0]
+        return self.bbox.x0
 
     @property
     def font_size(self):

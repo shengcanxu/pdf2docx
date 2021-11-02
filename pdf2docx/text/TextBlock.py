@@ -67,6 +67,15 @@ class TextBlock(Block):
         return ''.join(lines_text)
 
     @property
+    def font_size(self):
+        '''the max font_line of lines inside'''
+        return max([line.font_size for line in self.lines])
+
+    @property
+    def indent_space(self):
+        return min([line.indent_space for line in self.lines])
+
+    @property
     def white_space_only(self):
         '''If this block contains only white space or not. If True, this block is safe to be removed.'''
         return all(line.white_space_only for line in self.lines)

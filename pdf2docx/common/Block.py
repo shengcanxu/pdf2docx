@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 '''Base class for text/image/table blocks.
 '''
+import re
 
-from .share import BlockType, TextAlignment
+from .share import BlockType, TextAlignment, BlockOrderType
 from .Element import Element
 from . import constants
 
@@ -19,6 +20,8 @@ class Block(Element):
 
         # horizontal spacing
         if raw is None: raw = {}
+        self._id = raw.get('id', id(self))
+        self._order_num = raw.get('order_num', "")
         self.alignment = self._get_alignment(raw.get('alignment', 0))
         self.left_space = raw.get('left_space', 0.0)
         self.right_space = raw.get('right_space', 0.0)
@@ -73,6 +76,35 @@ class Block(Element):
     def is_table_block(self):
         '''Whether table (lattice or stream) block.'''
         return self.is_lattice_table_block or self.is_stream_table_block
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def is_order_block(self):
+        return len(self._order_num) > 0
+
+    @property
+    def order_num(self):
+        return self._order_num
+
+    @order_num.setter
+    def order_num(self, order):
+        self._order_num = order
+
+    @property
+    def order_type(self):
+        if len(self._order_num) == 0: return BlockOrderType.UNDEFINED
+        if re.match("第[一二三四五六七八九十]+", self._order_num): return BlockOrderType.DI_ZI
+        if re.match("第[0-9]+", self._order_num): return BlockOrderType.DI_SHUZI
+        if re.match("[一二三四五六七八九十]+、", self._order_num): return BlockOrderType.ZI_DUN
+        if re.match("[0-9]+、", self._order_num): return BlockOrderType.SHUZI_DUN
+        if re.match("[A-Za-z]+、", self._order_num): return BlockOrderType.ZIMU_DUN
+        if re.match("[（\(]?[一二三四五六七八九十]+[）\)]", self._order_num): return BlockOrderType.ZI_KUOHAO
+        if re.match("[（\(]?[0-9]+[）\)]", self._order_num): return BlockOrderType.SHUZI_KUOHAO
+        if re.match("[（\(]?[A-Za-z]+[）\)]", self._order_num): return BlockOrderType.ZIMU_KUOHAO
+        return BlockOrderType.UNDEFINED
 
     def set_text_block(self):
         '''Set block type.'''
@@ -148,6 +180,8 @@ class Block(Element):
         '''Store attributes in json format.'''
         res = super().store()
         res.update({
+            'id': self._id,
+            'order_num': self._order_num,
             'type': self._type.value,
             'alignment': self.alignment.value,
             'left_space': self.left_space,
