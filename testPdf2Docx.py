@@ -1,6 +1,5 @@
 from FinanceReport.PdfSkeleton import PdfSkeleton
 from pdf2docx import Converter
-from datetime import datetime, timedelta
 import json
 
 # pdf_file = 'test3.pdf'

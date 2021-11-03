@@ -123,3 +123,19 @@ class PdfSkeleton:
         blocks = self._pdf_blocks()
         self._tree.restore(data, blocks)
         self._connect_children(self.tree)
+
+    def print_tables(self):
+        for deep, node in self.tree._head_first_traverse(0, self.tree.root):
+            if node.block.is_text_block and node.block.order_type != BlockOrderType.UNDEFINED:
+                print("%s%s" % ("  " * deep, node.text))
+            elif node.block.is_table_block:
+                title_node = node.pre_node
+                while title_node is not None: #从兄弟上获得title
+                    if title_node.block.order_type != BlockOrderType.UNDEFINED:
+                        break
+                    title_node = title_node.pre_node
+                if title_node is None:
+                    title_node = node.parent
+
+                print("%s%s" % ("  " * deep, title_node.block.raw_text))
+                print("%s<Table %d X %d>" % ("  " * deep, node.block.num_rows, node.block.num_cols))

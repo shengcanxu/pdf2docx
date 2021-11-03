@@ -90,13 +90,23 @@ class BlockTree:
         self._root.restore(raw_root, blocks)
 
     def print_tree(self):
-        self._print_tree("", self.root)
+        # self._print_tree("", self.root)
+        for deep, node in self._head_first_traverse(0, self.root):
+            if node.block.is_text_block and node.block.order_type != BlockOrderType.UNDEFINED:
+                print("%s%s" % ("  " * deep, node.text))
+            elif node.block.is_table_block:
+                print("%s<Table %d X %d>" % ("  " * deep, node.block.num_rows, node.block.num_cols))
 
-    def _print_tree(self, prefix, node):
-        cur_prefix = prefix + "    "
+    def _head_first_traverse(self, deep:int, node:BlockNode):
+        deep += 1
         for child in node.children:
-            if child.block.is_text_block and child.block.order_type != BlockOrderType.UNDEFINED:
-                print("%s%s" % (cur_prefix, child.text))
-            elif child.block.is_table_block:
-                print("%s<Table>" % cur_prefix)
-            self._print_tree(cur_prefix, child)
+            yield deep, child
+            yield from self._head_first_traverse(deep, child)
+
+    def _children_first_traverse(self, deep:int, node:BlockNode):
+        deep += 1
+        for child in node.children:
+            yield from self._children_first_traverse(deep, child)
+            yield deep, child
+
+

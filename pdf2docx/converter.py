@@ -54,6 +54,10 @@ class Converter:
     def block_tree(self):
         return self._skeleton.tree
 
+    @property
+    def skeleton(self):
+        return self._skeleton
+
     def close(self):
         self._fitz_doc.close()
 
@@ -72,7 +76,7 @@ class Converter:
             0.5,  # two borders are intersected if the gap lower than this value
             'max_border_width': 6.0,  # max border width
             'min_border_clearance':
-            2.0,  # the minimum allowable clearance of two borders
+            4.0,  # the minimum allowable clearance of two borders
             'float_image_ignorable_gap':
             5.0,  # float image if the intersection exceeds this value
             'float_layout_tolerance':

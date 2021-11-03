@@ -73,3 +73,12 @@ class Row(Element):
         # set cell style and contents
         for idx_col in range(len(table.columns)):
             self._cells[idx_col].make_docx(table, (idx_row, idx_col))
+
+    @property
+    def text(self):
+        '''Get text contained in each cell.
+
+        Returns:
+            list: 2D-list with each element representing text in cell.
+        '''
+        return [cell.text for cell in self._cells]
