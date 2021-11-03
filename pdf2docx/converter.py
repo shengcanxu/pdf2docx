@@ -38,6 +38,10 @@ class Converter:
         # initialize empty pages container
         self._pages = Pages()
 
+        # initialize empty pdf_skeleton
+        from FinanceReport.PdfSkeleton import PdfSkeleton
+        self._skeleton = PdfSkeleton(self._pages)
+
     @property
     def fitz_doc(self):
         return self._fitz_doc
@@ -45,6 +49,10 @@ class Converter:
     @property
     def pages(self):
         return self._pages
+
+    @property
+    def block_tree(self):
+        return self._skeleton.tree
 
     def close(self):
         self._fitz_doc.close()
@@ -196,7 +204,9 @@ class Converter:
                 except Exception as e:
                     logging.warning('Ignore page due to error: %s', e)
 
+        self._skeleton.build_skeleton()
         return self
+
 
     def make_docx(self, docx_filename=None):
         '''Step 4 of converting process: create docx file with converted pages.
@@ -241,6 +251,7 @@ class Converter:
             'page_cnt': len(self._pages),  # count of all pages
             'pages': [page.store() for page in self._pages
                       if page.finalized],  # parsed pages only
+            'block_tree': self._skeleton.store()
         }
 
     def restore(self, data: dict):
@@ -255,6 +266,9 @@ class Converter:
         for raw_page in data.get('pages', []):
             idx = raw_page.get('id', -1)
             self._pages[idx].restore(raw_page)
+
+        raw_tree = data.get('block_tree', {})
+        self._skeleton.restore(raw_tree)
 
     def serialize(self, filename: str):
         '''Write parsed pages to specified JSON file.'''

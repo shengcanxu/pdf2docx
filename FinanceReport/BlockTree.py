@@ -1,10 +1,12 @@
 from pdf2docx.common.Block import Block
 from pdf2docx.common.share import BlockOrderType
+from pdf2docx.layout.Blocks import Blocks
 from pdf2docx.text.TextBlock import TextBlock
 
 
 class BlockNode:
     def __init__(self, block:TextBlock, parent = None):
+        self._id = id(self)
         self._block = block
         self._children = []
         self._parent = parent
@@ -14,6 +16,26 @@ class BlockNode:
     def add_child(self, block:TextBlock):
         node = BlockNode(block, parent=self)
         self._children.append(node)
+
+    def store(self):
+        return {
+            'id': self._id,
+            'block': self._block.id if self._block is not None else 0,
+            'children': [node.store() for node in self._children],
+        }
+
+    def restore(self, data: dict, blocks:Blocks):
+        self._id = data.get('id', 0)
+        block_id = data.get('block', 0)
+        self._block = blocks.find_block(block_id)
+        for raw_node in data.get('children', []):
+            node = BlockNode(block=None, parent=self)
+            node.restore(raw_node, blocks)
+            self._children.append(node)
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def parent(self):
@@ -47,6 +69,7 @@ class BlockNode:
     def text(self):
         return self._block.raw_text
 
+
 class BlockTree:
     ''' pdf文件的文档框架'''
 
@@ -56,6 +79,15 @@ class BlockTree:
     @property
     def root(self):
         return self._root
+
+    def store(self):
+        return {
+            'root': self._root.store()
+        }
+
+    def restore(self, data: dict, blocks:Blocks):
+        raw_root = data.get('root', {})
+        self._root.restore(raw_root, blocks)
 
     def print_tree(self):
         self._print_tree("", self.root)

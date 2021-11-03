@@ -3,14 +3,11 @@ import logging
 from FinanceReport.BlockTree import BlockTree, BlockNode
 from pdf2docx.common.Collection import Collection
 from pdf2docx.common.share import BlockOrderType
-from pdf2docx.page.Page import Page
 from pdf2docx.page.Pages import Pages
 from pdf2docx.layout.Blocks import Blocks, Block
 from pdf2docx.layout import Section
 
 # logging
-from pdf2docx.text.TextBlock import TextBlock
-
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s")
 
 
@@ -21,15 +18,29 @@ class PdfSkeleton:
 
     def __init__(self, pages:Pages):
         self._pages = pages
+        self._tree = None
+
+    @property
+    def tree(self):
+        if self._tree is None:
+            self._tree = self.build_skeleton()
+        return self._tree
 
     def build_skeleton(self):
         (skeleton_blocks, blocks) = self._get_skeleton_blocks()
         tree = self._build_tree(blocks, skeleton_blocks)
         self._connect_children(tree)
-        tree.print_tree()
+
+        self._tree = tree
+        return tree
+
+        # tables = self._pdf_tables()
+        # for table in tables:
+        #     print(table.text)
+        #     print(" ")
 
     # 将树里面的列表节点左右连接起来
-    def _connect_children(self, tree:BlockTree):
+    def _connect_children(self, tree:BlockNode):
         def _connect(node:BlockNode):
             nodes = node.children
             length = len(nodes)
@@ -91,13 +102,24 @@ class PdfSkeleton:
         return (matched_blocks, blocks)
 
     def _pdf_blocks(self):
-        """
-        Returns:
-            Blocks: pdf文件中所有的block， 按照文件顺序
-        """
+        """ Returns: Blocks: pdf文件中所有的block， 按照文件顺序 """
         blocks = Blocks()
         for page in self._pages:
             for section in page.sections:
                 for column in section:
                     blocks.extend(column.blocks.sort_in_reading_order())
         return blocks
+
+    def _pdf_tables(self):
+        """ Returns: tables: pdf文件中所有的tables， 按照文件顺序 """
+        blocks = self._pdf_blocks()
+        return list(filter(lambda b: b.is_table_block, blocks))
+
+    def store(self):
+        return self.tree.store()
+
+    def restore(self, data: dict):
+        self._tree = BlockTree()
+        blocks = self._pdf_blocks()
+        self._tree.restore(data, blocks)
+        self._connect_children(self.tree)

@@ -787,3 +787,10 @@ class Blocks(ElementCollection):
         for block in self._instances:
             if block.is_text_block:
                 block.parse_relative_line_spacing()
+
+    # find the block with id
+    def find_block(self, id:int):
+        for block in self._instances:
+            if block.id == id:
+                return block
+        return None
