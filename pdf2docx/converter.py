@@ -2,10 +2,15 @@
 import os
 import json
 import logging
+import re
 from time import perf_counter
 from multiprocessing import Pool, cpu_count
+
+import PIL.FontFile
 import fitz
 from docx import Document
+
+from .common.Collection import Collection
 from .page.Page import Page
 from .page.Pages import Pages
 
@@ -208,8 +213,47 @@ class Converter:
                 except Exception as e:
                     logging.warning('Ignore page due to error: %s', e)
 
+        #去除页眉和页脚
+        self._remove_header_footer()
+
         self._skeleton.build_skeleton()
         return self
+
+    # 将所有页面页头第一个block相似度，如果有20%是一样的就认为是页头， 页脚一样处理
+    def _remove_header_footer(self):
+        remove_list = []
+        page_num = len(self._pages)
+        threhold = 20 if page_num >= 30 else 50 #相同的数量的百分比， 如果大于20%就认为可以消除(10%是阈值， 如果页数少于30则取值50%)
+        min_blocks_num = min([len(p.blocks) for p in self._pages])
+        search_num = 5 if min_blocks_num > 5 else min_blocks_num
+
+        search_index = list(range(0,search_num))
+        search_index.extend(list(range(-1, -search_num-1, -1)))
+        for index in search_index:
+            blocks = Collection()
+            blocks.extend([self._pages[i].blocks[index] for i in range(0, page_num)])
+            fun = lambda a,b: a.is_text_block and b.is_text_block and a.text == b.text
+            groups = blocks.group(fun)
+            for group in groups:
+                num = len(group)
+                if num * 100 / page_num >= threhold:
+                    remove_list.append(group[0])
+
+        def in_remove_list(block):
+            for b in remove_list:
+                if block.text == b.text: return True
+            return False
+
+        for page_index, page in enumerate(self._pages):
+            for section in page.sections:
+                for column in section:
+                    blocks = list(filter(lambda b:not in_remove_list(b) ,column.blocks))
+                    # 去除末尾的页码， 页码可以是“11”， 也可以是"11/100"的格式
+                    if re.match("%d[/0-9+]*" % (page_index+1), blocks[-1].text):
+                        blocks = blocks[0:len(blocks)-1]
+                    column.blocks.reset(blocks)
+
+
 
 
     def make_docx(self, docx_filename=None):

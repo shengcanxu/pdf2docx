@@ -44,6 +44,7 @@ from docx.enum.section import WD_SECTION
 from ..common.Collection import BaseCollection
 from ..common.share import debug_plot
 from .BasePage import BasePage
+from ..layout.Blocks import Blocks
 from ..layout.Sections import Sections
 from ..image.ImageBlock import ImageBlock
 
@@ -96,8 +97,15 @@ class Page(BasePage):
 
 
     @property
-    def finalized(self): return self._finalized   
+    def finalized(self): return self._finalized
 
+    @property
+    def blocks(self):
+        blocks = Blocks()
+        for section in self.sections:
+            for column in section:
+                blocks.extend(column.blocks.sort_in_reading_order())
+        return blocks
 
     def store(self):
         '''Store parsed layout in dict format.'''

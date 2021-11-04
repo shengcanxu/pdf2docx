@@ -4,8 +4,8 @@ from FinanceReport.BlockTree import BlockTree, BlockNode
 from pdf2docx.common.Collection import Collection
 from pdf2docx.common.share import BlockOrderType
 from pdf2docx.page.Pages import Pages
-from pdf2docx.layout.Blocks import Blocks, Block
-from pdf2docx.layout import Section
+from pdf2docx.layout.Blocks import Blocks
+import re
 
 # logging
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s")
@@ -89,12 +89,30 @@ class PdfSkeleton:
         return tree
 
 
-    def get_skeleton_str(self):
-        blocks = self._retrieve_blocks()
+    def _get_skeleton_blocks(self):
+        num_exp = "[A-Za-z0-9一二三四五六七八九十]+"
+        reg_exp = "^\s*(([（\(]?%s[）\)])|(%s、)|(第%s节)).*$" % (num_exp, num_exp, num_exp)
+        pattern = re.compile(reg_exp)
+
+        blocks = self._pdf_blocks()
+        #统计不同字号的文字数量， 最大文字数量的字号以下的文字大概率不是框架标题
+        statistics = {} # type: dict [float, Blocks]
+        for block in blocks:
+            if block.is_text_block:
+                font_size = block.font_size
+                if font_size in statistics:
+                    statistics[font_size] += len(block.raw_text)
+                else:
+                    statistics[font_size] = len(block.raw_text)
+
+        sorted_stat = sorted(statistics.items(), key=lambda v:v[1], reverse=True)
+        article_font_size = sorted_stat[0][0]
+
+        matched_blocks = Collection()
         for block in blocks:
             if block.is_text_block:
                 match = re.match(pattern, block.raw_text)
-                if match:
+                if match and block.font_size > article_font_size:  #只有大于文章的主要内容的字号才作为标题
                     block.order_num = match.group(1)
                     matched_blocks.append(block)
                 else:
@@ -105,9 +123,7 @@ class PdfSkeleton:
         """ Returns: Blocks: pdf文件中所有的block， 按照文件顺序 """
         blocks = Blocks()
         for page in self._pages:
-            for section in page.sections:
-                for column in section:
-                    blocks.extend(column.blocks.sort_in_reading_order())
+            blocks.extend(page.blocks)
         return blocks
 
     def _pdf_tables(self):

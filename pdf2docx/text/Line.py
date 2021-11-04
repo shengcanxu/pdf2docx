@@ -91,7 +91,7 @@ class Line(Element):
     @property
     def font_size(self):
         sizes = [span.size for span in self.spans if isinstance(span, TextSpan)]
-        return max(sizes) if len(sizes) > 0 else 0
+        return max(sizes) if len(sizes) > 0 else 0.0
 
     @property
     def white_space_only(self):

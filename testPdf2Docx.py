@@ -2,24 +2,18 @@ from FinanceReport.PdfSkeleton import PdfSkeleton
 from pdf2docx import Converter
 import json
 
-# pdf_file = 'test3.pdf'
-pdf_file = 'unresolved.pdf'
-json_file = 'unresolved.json'
+pdf_file = 'test2.pdf'
+json_file = 'test2.json'
+# pdf_file = 'unresolved.pdf'
+# json_file = 'unresolved.json'
 docx_file = 'sample.docx'
 
 
-def parsPDFtoJson():
+def parse_pdf_to_json():
     cv = Converter(pdf_file)
     settings = cv.default_settings
     cv = cv.load_pages()
     totalPageNum = len(cv.pages)
-
-    for pageNum in range(0, totalPageNum):
-    # for pageNum in [68]:
-        print("starting on page: %d" % pageNum)
-        cv = cv.load_pages(start=pageNum, end=pageNum+1)
-        cv = cv.parse_document(**settings)
-        cv = cv.parse_pages(**settings)
 
     cv = cv.parse_document(**settings)
     cv = cv.parse_pages(**settings)
@@ -32,7 +26,21 @@ def parsPDFtoJson():
     cv.close()
 
 
-def restoreFromJson():
+def parse_page_on_index(index:int, num:int):
+    cv = Converter(pdf_file)
+    settings = cv.default_settings
+
+    cv = cv.load_pages(start=index, end=index+num)
+    cv = cv.parse_document(**settings)
+    cv = cv.parse_pages(**settings)
+
+    data = cv.store()
+    strData = json.dumps(data)
+    with open(json_file,"w") as f:
+        f.write(strData)
+
+
+def restore_from_json():
     cv = Converter(pdf_file)
     settings = cv.default_settings
     with open(json_file, "r") as f:
@@ -42,12 +50,22 @@ def restoreFromJson():
     return cv
 
 
-# 114 , 80
+# parse_pdf_to_json()
+# parse_page_on_index(11, 3)
 
-# parsPDFtoJson()
-cv = restoreFromJson()
-print(cv.pages.__len__())
-skeleton = PdfSkeleton(cv.pages)
-# skeleton.get_skeleton_str()
+cv = restore_from_json()
+cv._remove_header_footer()
+
+# cv.block_tree.print_tree()
+# cv.skeleton.print_tables()
+
+aa=2
+# skeleton = PdfSkeleton(cv.pages)
+# skeleton.build_skeleton()
 # skeleton.get_indent_space()
-skeleton.get_font_size()
+# skeleton.get_font_size()
+
+
+
+
+# 需要在更多的pdf文件上测试 _remove_header_footer

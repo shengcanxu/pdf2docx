@@ -67,7 +67,7 @@ class TextBlock(Block):
         return ''.join(lines_text)
 
     @property
-    def font_size(self):
+    def font_size(self) -> float:
         '''the max font_line of lines inside'''
         return max([line.font_size for line in self.lines])
 
