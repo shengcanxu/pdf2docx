@@ -72,6 +72,16 @@ class TextBlock(Block):
         return max([line.font_size for line in self.lines])
 
     @property
+    def font(self):
+        return self.lines[0].font if len(self.lines) != 0 else ""
+
+    @property
+    def is_bold_text(self):
+        '''超过一半的字数是bold就返回true'''
+        bold_text_len = sum([len(line.text) for line in self.lines if line.is_bold_line])
+        return bold_text_len * 100 / len(self.text) > 50
+
+    @property
     def indent_space(self):
         return min([line.indent_space for line in self.lines])
 

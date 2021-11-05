@@ -72,26 +72,27 @@ class Line(Element):
 
     @property
     def is_bold_line(self):
+        '''只要一个span是bold就认为是bold'''
         for span in self.spans:
-            if not isinstance(span, TextSpan): return False
-            if not bool(span.flags & 2**4): return False
-        return True
+            if isinstance(span, TextSpan) and span.is_bold:
+                return True
+        return False
 
 
     @property
     def indent_space(self):
         '''line 距离page边的距离'''
-        # page = self
-        # while not isinstance(page, pdf2docx.page.Page.Page):
-        #     if page is None: return 10000
-        #     page = page.parent
-        # return self.bbox.x0 - page.margin[0]
         return self.bbox.x0
 
     @property
     def font_size(self):
         sizes = [span.size for span in self.spans if isinstance(span, TextSpan)]
         return max(sizes) if len(sizes) > 0 else 0.0
+
+    @property
+    def font(self):
+        fonts = [span.font for span in self.spans if isinstance(span, TextSpan)]
+        return fonts[0] if len(fonts) > 0 else ""
 
     @property
     def white_space_only(self):

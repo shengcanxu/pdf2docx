@@ -84,6 +84,9 @@ class TextSpan(Element):
         '''Set span text directly in case no chars are stores, e.g. restored from json.'''
         self._text = value
 
+    @property
+    def is_bold(self):
+        return self.flags & 2**4
     
     def cal_bbox(self):
         '''Calculate bbox based on contained instances.'''

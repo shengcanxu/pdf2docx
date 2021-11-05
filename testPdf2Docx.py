@@ -50,13 +50,13 @@ def restore_from_json():
     return cv
 
 
-# parse_pdf_to_json()
-# parse_page_on_index(11, 3)
+parse_pdf_to_json()
+# parse_page_on_index(18, 1)
 
 cv = restore_from_json()
-cv._remove_header_footer()
 
-# cv.block_tree.print_tree()
+
+cv.block_tree.print_tree()
 # cv.skeleton.print_tables()
 
 aa=2

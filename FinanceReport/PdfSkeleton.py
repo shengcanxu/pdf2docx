@@ -112,7 +112,8 @@ class PdfSkeleton:
         for block in blocks:
             if block.is_text_block:
                 match = re.match(pattern, block.raw_text)
-                if match and block.font_size > article_font_size:  #只有大于文章的主要内容的字号才作为标题
+                # 只有大于文章的主要内容的字号, 或者字号相等但是是bold, 或者字号想等但是字体是黑体（SimHei）
+                if match and (block.font_size > article_font_size or (block.font_size == article_font_size and (block.font == 'SimHei' or block.is_bold_text))):
                     block.order_num = match.group(1)
                     matched_blocks.append(block)
                 else:
