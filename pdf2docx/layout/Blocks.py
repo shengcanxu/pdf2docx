@@ -3,6 +3,8 @@
 '''
 
 from docx.shared import Pt
+from fitz import Rect
+
 from ..common import constants
 from ..common.Collection import ElementCollection
 from ..common.share import BlockType, rgb_value
@@ -653,7 +655,10 @@ class Blocks(ElementCollection):
         for table, blocks_in_table in zip(tables, blocks_in_tables):
 
             # fully contained in one table
-            if table.bbox.contains(block.bbox):
+            # 会有小数点精度的问题， 所以只要相交的部分是占99%就认为是相交了
+            # if table.bbox.contains(block.bbox):
+            intersect = Rect(table.bbox).intersect(block.bbox)
+            if intersect.width * intersect.height * 100 /  block.bbox.width * block.bbox.height >= 99:
                 blocks_in_table.append(block)
                 break
 

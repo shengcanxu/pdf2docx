@@ -94,6 +94,15 @@ class Block(Element):
         self._order_num = order
 
     @property
+    def page_num(self):
+        from pdf2docx.page.Page import Page
+        b = self.parent
+        while b is not None:
+            if isinstance(b, Page): return b.id
+            b = b.parent
+        return -1
+
+    @property
     def order_type(self):
         if len(self._order_num) == 0: return BlockOrderType.UNDEFINED
         if re.match("第[一二三四五六七八九十]+", self._order_num): return BlockOrderType.DI_ZI
