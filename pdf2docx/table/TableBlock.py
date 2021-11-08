@@ -45,6 +45,7 @@ class TableBlock(Block):
 
         # collect rows
         self._rows = Rows(parent=self).restore(raw.get('rows', []))
+        self._header = None
 
         # lattice table by default
         self.set_lattice_table_block()
@@ -82,6 +83,18 @@ class TableBlock(Block):
             list: 2D-list with each element representing text in cell.
         '''
         return [ [cell.text for cell in row] for row in self._rows ]
+
+    @property
+    def header(self):
+        if self._header:
+            return self._header
+        else:
+            self._header = Rows(parent=self)
+            max_merged_cells_rows_num = max([cell.merged_cells[0] for cell in self._rows[0]])
+            for i in range(0, max_merged_cells_rows_num):
+                self._header.append(self._rows[i])
+            return self._header
+
 
     @property
     def outer_bbox(self):

@@ -2,10 +2,10 @@ from FinanceReport.PdfSkeleton import PdfSkeleton
 from pdf2docx import Converter
 import json
 
-pdf_file = 'test2.pdf'
-json_file = 'test2.json'
-# pdf_file = 'unresolved.pdf'
-# json_file = 'unresolved.json'
+# pdf_file = 'test2.pdf'
+# json_file = 'test2.json'
+pdf_file = 'unresolved.pdf'
+json_file = 'unresolved.json'
 docx_file = 'sample.docx'
 
 
@@ -50,12 +50,12 @@ def restore_from_json():
     return cv
 
 
-parse_pdf_to_json()
-# parse_page_on_index(18, 1)
+# parse_pdf_to_json()
+parse_page_on_index(82, 2)
 
 cv = restore_from_json()
 
-
+cv._combineTables()
 cv.block_tree.print_tree()
 # cv.skeleton.print_tables()
 

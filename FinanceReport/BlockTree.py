@@ -95,7 +95,7 @@ class BlockTree:
             if node.block.is_text_block and node.block.order_type != BlockOrderType.UNDEFINED:
                 print("%s%s" % ("  " * deep, node.text))
             elif node.block.is_table_block:
-                print("%s<Table %d X %d>" % ("  " * deep, node.block.num_rows, node.block.num_cols))
+                print("%s<Table %d X %d> header: %d lines" % ("  " * deep, node.block.num_rows, node.block.num_cols, len(node.block.header)))
 
     def _head_first_traverse(self, deep:int, node:BlockNode):
         deep += 1

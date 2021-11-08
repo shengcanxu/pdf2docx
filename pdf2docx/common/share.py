@@ -3,6 +3,8 @@ from enum import Enum
 import random
 from collections import deque
 from collections.abc import Iterable
+
+from fitz import Rect
 from fitz.utils import getColorList, getColorInfoList
 
 
@@ -395,3 +397,10 @@ def _graph_bfs_from_node(graph, start):
         searched.add(cur_node)
         for node in graph[cur_node]:
             search_queue.append(node)
+
+# # 判断bbox是不是在container里面。
+# # 不用默认Rect.contains()是因为会有小数点精度的问题， 所以只要相交的部分是占99%就认为是相交了
+def contains(container:Rect, bbox:Rect, threshold: float=0.99) ->bool:
+    if len(container) != 4 or len(bbox) != 4: return False
+    intersect = Rect(container).intersect(bbox)
+    return intersect.width * intersect.height * 100 / bbox.width * bbox.height >= threshold * 100

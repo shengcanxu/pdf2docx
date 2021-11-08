@@ -3,11 +3,10 @@
 '''
 
 from docx.shared import Pt
-from fitz import Rect
 
 from ..common import constants
 from ..common.Collection import ElementCollection
-from ..common.share import BlockType, rgb_value
+from ..common.share import BlockType, rgb_value, contains
 from ..common.Block import Block
 from ..common.docx import reset_paragraph_format, delete_paragraph
 from ..shape.Shape import Stroke
@@ -657,8 +656,7 @@ class Blocks(ElementCollection):
             # fully contained in one table
             # 会有小数点精度的问题， 所以只要相交的部分是占99%就认为是相交了
             # if table.bbox.contains(block.bbox):
-            intersect = Rect(table.bbox).intersect(block.bbox)
-            if intersect.width * intersect.height * 100 /  block.bbox.width * block.bbox.height >= 99:
+            if contains(table.bbox, block.bbox):
                 blocks_in_table.append(block)
                 break
 

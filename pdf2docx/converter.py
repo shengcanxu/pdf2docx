@@ -11,10 +11,13 @@ import fitz
 from docx import Document
 
 from .common.Collection import Collection
+from .layout.Blocks import Blocks
 from .page.Page import Page
 from .page.Pages import Pages
 
 # logging
+from .table.TableBlock import TableBlock
+
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s")
 
 
@@ -212,9 +215,13 @@ class Converter:
                     page.parse(**kwargs)
                 except Exception as e:
                     logging.warning('Ignore page due to error: %s', e)
+                    raise e
 
         #去除页眉和页脚
         self._remove_header_footer()
+
+        # 将被两个页面分割的表格合并
+        self._combineTables()
 
         self._skeleton.build_skeleton()
         return self
@@ -253,7 +260,15 @@ class Converter:
                         blocks = blocks[0:len(blocks)-1]
                     column.blocks.reset(blocks)
 
+    def _combineTables(self):
+        pre_page = self._pages[0]
+        for page in self._pages[1:]:
+            pre_blocks = pre_page.blocks
+            cur_blocks = page.blocks
+            if len(pre_blocks) > 0 and len(cur_blocks) > 0 and pre_blocks[-1].is_table_block and cur_blocks[0].is_table_block:
+                print(page.id)
 
+            pre_page = page
 
 
     def make_docx(self, docx_filename=None):

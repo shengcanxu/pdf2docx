@@ -93,7 +93,8 @@ class Layout:
         '''
         # add shape if contained in cell
         for shape in shapes:
-            if self.working_bbox & shape.bbox: self.shapes.append(shape)
+            if self.working_bbox & shape.bbox:
+                self.shapes.append(shape)
 
 
     def parse(self, **settings):

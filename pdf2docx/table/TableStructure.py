@@ -5,7 +5,7 @@
 
 import fitz
 from ..common.Element import Element
-from ..common.share import RectType
+from ..common.share import RectType, contains
 from ..common import constants
 from ..shape.Shape import Shape, Stroke
 from ..shape.Shapes import Shapes
@@ -78,7 +78,8 @@ class CellStructure:
 
         # shading shape of this cell        
         for shape in fills:
-            if shape.contains(target, threshold=constants.FACTOR_MOST):
+            # if shape.contains(target, threshold=constants.FACTOR_MOST):
+            if contains(shape.bbox, target.bbox, threshold=constants.FACTOR_MOST):
                 self.shading = shape
                 break
         else:

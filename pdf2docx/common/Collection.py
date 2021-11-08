@@ -5,7 +5,7 @@ import logging
 
 import fitz
 from .Element import Element
-from .share import IText, TextDirection, solve_rects_intersection, graph_bfs
+from .share import IText, TextDirection, solve_rects_intersection, graph_bfs, contains
 
 
 class BaseCollection:
@@ -281,8 +281,8 @@ class ElementCollection(Collection, IText):
         Args:
             bbox  (fitz.Rect): target boundary box.
         '''
-        instances = list(
-            filter(lambda e: bbox.contains(e.bbox), self._instances))
+        # instances = list(filter(lambda e: bbox.contains(e.bbox), self._instances))
+        instances = list(filter(lambda e: contains(bbox,e.bbox, threshold=0.99), self._instances))
         return self.__class__(instances)
 
     def split_with_intersection(self,
