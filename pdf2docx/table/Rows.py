@@ -24,4 +24,8 @@ class Rows(ElementCollection):
             self.append(row)
         return self
 
+    @property
+    def text(self):
+        return [ [cell.text for cell in row] for row in self._instances ]
+
 

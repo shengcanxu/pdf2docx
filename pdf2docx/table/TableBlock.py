@@ -45,7 +45,6 @@ class TableBlock(Block):
 
         # collect rows
         self._rows = Rows(parent=self).restore(raw.get('rows', []))
-        self._header = None
 
         # lattice table by default
         self.set_lattice_table_block()
@@ -86,14 +85,16 @@ class TableBlock(Block):
 
     @property
     def header(self):
-        if self._header:
-            return self._header
-        else:
-            self._header = Rows(parent=self)
-            max_merged_cells_rows_num = max([cell.merged_cells[0] for cell in self._rows[0]])
-            for i in range(0, max_merged_cells_rows_num):
-                self._header.append(self._rows[i])
-            return self._header
+        header = Rows(parent=self)
+        max_merged_cells_rows_num = max([cell.merged_cells[0] for cell in self._rows[0]])
+        shading_lines = 0
+        for row in self._rows:
+            if row.is_shading: shading_lines += 1
+            else: break
+        header_lines = shading_lines if shading_lines > 0 else (max_merged_cells_rows_num if max_merged_cells_rows_num > 1 else 0)
+        for i in range(0, header_lines):
+            header.append(self._rows[i])
+        return header
 
 
     @property

@@ -16,6 +16,7 @@ from .page.Page import Page
 from .page.Pages import Pages
 
 # logging
+from .table.Rows import Rows
 from .table.TableBlock import TableBlock
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s")
@@ -81,7 +82,7 @@ class Converter:
             'min_section_height':
             20.0,  # The minimum height of a valid section.
             'connected_border_tolerance':
-            0.5,  # two borders are intersected if the gap lower than this value
+            1.5,  # two borders are intersected if the gap lower than this value
             'max_border_width': 6.0,  # max border width
             'min_border_clearance':
             4.0,  # the minimum allowable clearance of two borders
@@ -230,7 +231,7 @@ class Converter:
     def _remove_header_footer(self):
         remove_list = []
         page_num = len(self._pages)
-        threhold = 20 if page_num >= 30 else 50 #相同的数量的百分比， 如果大于20%就认为可以消除(10%是阈值， 如果页数少于30则取值50%)
+        threhold = 30 if page_num >= 30 else 50 #相同的数量的百分比， 如果大于30%就认为可以消除(30%是阈值， 如果页数少于30则取值50%)
         min_blocks_num = min([len(p.blocks) for p in self._pages])
         search_num = 5 if min_blocks_num > 5 else min_blocks_num
 
@@ -256,17 +257,63 @@ class Converter:
                 for column in section:
                     blocks = list(filter(lambda b:not in_remove_list(b) ,column.blocks))
                     # 去除末尾的页码， 页码可以是“11”， 也可以是"11/100"的格式
-                    if re.match("%d[/0-9+]*" % (page_index+1), blocks[-1].text):
+                    if len(blocks) > 0 and blocks[-1].is_text_block and  re.match("%d[/0-9+]*" % (page_index+1), blocks[-1].text):
                         blocks = blocks[0:len(blocks)-1]
                     column.blocks.reset(blocks)
 
+
     def _combineTables(self):
+        # 比较两个rows是不是一样的
+        def _same_rows(arows, brows):
+            if len(arows) != len(brows): return False
+            for arow, brow in zip(arows, brows):
+                if len(arow._cells) != len(brow._cells): return False
+                for acell, bcell in zip(arow._cells, brow._cells):
+                    if acell.text != bcell.text: return False
+            return True
+
+        # 合并tables后，更改后面table的y坐标。 只是更改到cell级别
+        def _reset_rows_ypos(rows, start_y):
+            distant = start_y - rows.bbox.y0
+            for row in rows:
+                row.bbox.y0 = row.bbox.y0 + distant
+                row.bbox.y1 = row.bbox.y1 + distant
+                for cell in row:
+                    cell.bbox.y0 = cell.bbox.y0 + distant
+                    cell.bbox.y1 = cell.bbox.y1 + distant
+
         pre_page = self._pages[0]
         for page in self._pages[1:]:
             pre_blocks = pre_page.blocks
             cur_blocks = page.blocks
             if len(pre_blocks) > 0 and len(cur_blocks) > 0 and pre_blocks[-1].is_table_block and cur_blocks[0].is_table_block:
-                print(page.id)
+                pre_table = pre_blocks[-1] #type: TableBlock
+                cur_table = cur_blocks[0] #type: TableBlock
+                cur_rows = Rows()
+                print(f"{page.id} {len(pre_table.header)} {len(cur_table.header)}")
+
+                # 如果后面的表格没有表头，只需要检查是否一样的列。 后面的表格有表头就要检查表头是否一致，列数是有一样
+                if len(pre_table) == 0 or len(cur_table) == 0: continue
+                if len(cur_table.header) > 0:
+                    if _same_rows(cur_table.header, pre_table.header) and pre_table.num_cols == cur_table.num_cols:
+                        cur_rows = Rows(cur_table._rows[len(cur_table.header):])
+                    else:
+                        logging.info("have header but header not equal in page %d" % page.id)
+                        pre_page = page
+                        continue
+                else:
+                    if pre_table.num_cols != cur_table.num_cols:
+                        logging.info("don't have header but column number is not equal in page %d" % page.id)
+                        print(f"<{pre_table.num_rows} X {pre_table.num_cols}> and <{cur_table.num_rows} X {cur_table.num_cols}>")
+                        pre_page = page
+                        continue
+                    else:
+                        cur_rows = cur_table._rows
+
+                # 合并表格
+                _reset_rows_ypos(cur_rows, pre_table.bbox.y1)
+                pre_table._rows.extend(cur_rows)
+                page.sections[0][0].blocks.reset(page.sections[0][0].blocks[1:])
 
             pre_page = page
 

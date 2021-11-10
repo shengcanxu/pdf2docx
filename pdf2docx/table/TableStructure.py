@@ -287,6 +287,13 @@ class TableStructure:
                 # cell bg-color
                 bg_color = cell_structure.shading.color if cell_structure.shading else None
 
+                if bg_color:
+                    # 如果bg_color是差不多白色， 就不设置
+                    R = (bg_color & 0xff0000) >> 16
+                    G = (bg_color & 0xff00) >> 8
+                    B = (bg_color & 0xff)
+                    if R >= 240 and G >= 240 and B >= 240: bg_color = None
+
                 # Cell object
                 # Note that cell bbox is calculated under real page CS, so needn't to consider rotation.
                 cell = Cell({

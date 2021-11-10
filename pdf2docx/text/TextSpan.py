@@ -77,7 +77,8 @@ class TextSpan(Element):
     @property
     def text(self):
         '''Get span text. Note joining chars is in a higher priority.'''
-        return ''.join([char.c for char in self.chars]) if self.chars else self._text
+        text = ''.join([char.c for char in self.chars]) if self.chars else self._text
+        return text.strip()
 
     @text.setter
     def text(self, value):

@@ -32,6 +32,9 @@ class Cell(Element, Layout):
         return '\n'.join([block.text if block.is_text_block else '<NEST TABLE>'
                                  for block in self.blocks])
 
+    @property
+    def is_shading(self):
+        return self.bg_color is not None
 
     @property
     def working_bbox(self):

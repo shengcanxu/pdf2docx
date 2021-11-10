@@ -82,3 +82,10 @@ class Row(Element):
             list: 2D-list with each element representing text in cell.
         '''
         return [cell.text for cell in self._cells]
+
+    @property
+    def is_shading(self):
+        if self._cells is None or len(self._cells) == 0: return False
+        for cell in self._cells:
+            if not cell.is_shading: return False
+        return True

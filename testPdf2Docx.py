@@ -51,12 +51,12 @@ def restore_from_json():
 
 
 # parse_pdf_to_json()
-parse_page_on_index(82, 2)
+# parse_page_on_index(132, 2)
 
 cv = restore_from_json()
 
 cv._combineTables()
-cv.block_tree.print_tree()
+# cv.block_tree.print_tree()
 # cv.skeleton.print_tables()
 
 aa=2
