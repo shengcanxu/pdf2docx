@@ -261,7 +261,7 @@ class Converter:
                         blocks = blocks[0:len(blocks)-1]
                     column.blocks.reset(blocks)
 
-
+    # 合并上下页面的同一个表格为一个table
     def _combineTables(self):
         # 比较两个rows是不是一样的
         def _same_rows(arows, brows):
@@ -283,7 +283,9 @@ class Converter:
                     cell.bbox.y1 = cell.bbox.y1 + distant
 
         pre_page = self._pages[0]
-        for page in self._pages[1:]:
+        for index in range(len(self._pages)-1, 0, -1):
+            page = self._pages[index]
+            pre_page = self._pages[index-1]
             pre_blocks = pre_page.blocks
             cur_blocks = page.blocks
             if len(pre_blocks) > 0 and len(cur_blocks) > 0 and pre_blocks[-1].is_table_block and cur_blocks[0].is_table_block:
@@ -299,13 +301,11 @@ class Converter:
                         cur_rows = Rows(cur_table._rows[len(cur_table.header):])
                     else:
                         logging.info("have header but header not equal in page %d" % page.id)
-                        pre_page = page
                         continue
                 else:
                     if pre_table.num_cols != cur_table.num_cols:
                         logging.info("don't have header but column number is not equal in page %d" % page.id)
                         print(f"<{pre_table.num_rows} X {pre_table.num_cols}> and <{cur_table.num_rows} X {cur_table.num_cols}>")
-                        pre_page = page
                         continue
                     else:
                         cur_rows = cur_table._rows
@@ -314,8 +314,6 @@ class Converter:
                 _reset_rows_ypos(cur_rows, pre_table.bbox.y1)
                 pre_table._rows.extend(cur_rows)
                 page.sections[0][0].blocks.reset(page.sections[0][0].blocks[1:])
-
-            pre_page = page
 
 
     def make_docx(self, docx_filename=None):

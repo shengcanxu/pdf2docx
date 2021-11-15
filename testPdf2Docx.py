@@ -51,7 +51,7 @@ def restore_from_json():
 
 
 # parse_pdf_to_json()
-# parse_page_on_index(132, 2)
+# parse_page_on_index(72, 3)
 
 cv = restore_from_json()
 
