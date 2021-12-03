@@ -286,7 +286,8 @@ class Converter:
         for index in range(len(self._pages)-1, 0, -1):
             page = self._pages[index]
             pre_page = self._pages[index-1]
-            pre_blocks = pre_page.blocks
+            self.page = pre_page
+            pre_blocks = self.page.blocks
             cur_blocks = page.blocks
             if len(pre_blocks) > 0 and len(cur_blocks) > 0 and pre_blocks[-1].is_table_block and cur_blocks[0].is_table_block:
                 pre_table = pre_blocks[-1] #type: TableBlock
@@ -300,11 +301,11 @@ class Converter:
                     if _same_rows(cur_table.header, pre_table.header) and pre_table.num_cols == cur_table.num_cols:
                         cur_rows = Rows(cur_table._rows[len(cur_table.header):])
                     else:
-                        logging.info("have header but header not equal in page %d" % page.id)
+                        logging.info(f"have header but header not equal in page {page.id}")
                         continue
                 else:
                     if pre_table.num_cols != cur_table.num_cols:
-                        logging.info("don't have header but column number is not equal in page %d" % page.id)
+                        logging.info(f"don't have header but column number is not equal in page {page.id}")
                         print(f"<{pre_table.num_rows} X {pre_table.num_cols}> and <{cur_table.num_rows} X {cur_table.num_cols}>")
                         continue
                     else:

@@ -190,7 +190,7 @@ class Blocks(ElementCollection):
 
                 width = max(group.bbox.width, group.bbox.height)
                 height = min(group.bbox.width, group.bbox.height)
-                if width >= dash_max_dimension * 4:
+                if width >= dash_max_dimension * 2:
                     stroke = Stroke({'width': height}).update_bbox(group.bbox)
                     strokes.append(stroke)
 
