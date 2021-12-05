@@ -85,6 +85,10 @@ class TableBlock(Block):
 
     @property
     def header(self):
+        ''' 获得表头
+            如果有背景色， 将背景色定义为header， 否则看有没有合并项， 将合并项定义为header。 这个定义header的方法很粗糙很容易错
+        TODO: 修正这个判断方法，当前header的判断方法容易出错
+        '''
         header = Rows(parent=self)
         max_merged_cells_rows_num = max([cell.merged_cells[0] for cell in self._rows[0]])
         shading_lines = 0

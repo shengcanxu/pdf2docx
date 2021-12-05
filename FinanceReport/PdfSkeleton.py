@@ -19,12 +19,19 @@ class PdfSkeleton:
     def __init__(self, pages:Pages):
         self._pages = pages
         self._tree = None
+        self._skeleton_list = None
 
     @property
     def tree(self):
         if self._tree is None:
             self._tree = self.build_skeleton()
         return self._tree
+
+    @property
+    def skeleton_list(self):
+        if self._skeleton_list is None:
+            self._skeleton_list = self.get_skeleton_list()
+        return self._skeleton_list
 
     def build_skeleton(self):
         (skeleton_blocks, blocks) = self._get_skeleton_blocks()
@@ -34,10 +41,43 @@ class PdfSkeleton:
         self._tree = tree
         return tree
 
-        # tables = self._pdf_tables()
-        # for table in tables:
-        #     print(table.text)
-        #     print(" ")
+    # 获得PDF文档的章节目录以list形式展现， 去掉不重要的文字内容，表格保留
+    def get_skeleton_list(self):
+        (skeleton_blocks, blocks) = self._get_skeleton_blocks()
+        self._skeleton_list = [block for block in blocks if block.is_table_block or block.order_type != BlockOrderType.UNDEFINED]
+        return self._skeleton_list
+
+    def print_skeleton_list(self):
+        for block in self._skeleton_list:
+            if block.is_text_block and block.order_type != BlockOrderType.UNDEFINED:
+                print(block.raw_text)
+            elif block.is_table_block:
+                # print(f"<Table {block.num_rows} X {block.num_cols}> header: {len(block.header)} lines. Title:{node._get_table_title()}")
+                print(f"<Table {block.num_rows} X {block.num_cols}> header: {len(block.header)} lines. Title:to_be_determined")
+
+    def skeleton_list_to_json(self):
+        def _get_table_texts(block):
+            table_texts = []
+            for row in block._rows:
+                cells_text = [cell.text for cell in row._cells]
+                table_texts.append(cells_text)
+            return table_texts
+
+        json_list = []
+        for block in self._skeleton_list:
+            if block.is_table_block:
+                json_list.append({
+                    'type': 'table',
+                    'title': 'to_be_determined',
+                    'text': _get_table_texts(block)
+                })
+            else:
+                json_list.append({
+                    'type': 'title',
+                    'text': block.raw_text,
+                })
+        return json_list
+
 
     # 将树里面的列表节点左右连接起来
     def _connect_children(self, tree:BlockNode):
@@ -133,26 +173,17 @@ class PdfSkeleton:
         return list(filter(lambda b: b.is_table_block, blocks))
 
     def store(self):
-        return self.tree.store()
+        # return self.tree.store()
+
+        # 放弃restore tree结构， 改成restore list结构， 因为list结构已经足够了
+        return [block.id for block in self.skeleton_list]
 
     def restore(self, data: dict):
-        self._tree = BlockTree()
+        # self._tree = BlockTree()
+        # blocks = self._pdf_blocks()
+        # self._tree.restore(data, blocks)
+        # self._connect_children(self.tree)
+
+        # 放弃restore tree结构， 改成restore list结构， 因为list结构已经足够了
         blocks = self._pdf_blocks()
-        self._tree.restore(data, blocks)
-        self._connect_children(self.tree)
-
-    def print_tables(self):
-        for deep, node in self.tree._head_first_traverse(0, self.tree.root):
-            if node.block.is_text_block and node.block.order_type != BlockOrderType.UNDEFINED:
-                print("%s%s" % ("  " * deep, node.text))
-            elif node.block.is_table_block:
-                title_node = node.pre_node
-                while title_node is not None: #从兄弟上获得title
-                    if title_node.block.order_type != BlockOrderType.UNDEFINED:
-                        break
-                    title_node = title_node.pre_node
-                if title_node is None:
-                    title_node = node.parent
-
-                print("%s%s" % ("  " * deep, title_node.block.raw_text))
-                print("%s<Table %d X %d>" % ("  " * deep, node.block.num_rows, node.block.num_cols))
+        self._skeleton_list = [blocks.find_block(block_id) for block_id in data]

@@ -224,7 +224,9 @@ class Converter:
         # 将被两个页面分割的表格合并
         self._combineTables()
 
-        self._skeleton.build_skeleton()
+        # 不用build skeleton建立树结构， 因为用列表结构已经可以完成功能了。 树结构很多时候还是错的，为后面的处理带来更多的麻烦
+        # self._skeleton.build_skeleton()
+        self._skeleton.get_skeleton_list()
         return self
 
     # 将所有页面页头第一个block相似度，如果有20%是一样的就认为是页头， 页脚一样处理
@@ -305,6 +307,7 @@ class Converter:
                         continue
                 else:
                     if pre_table.num_cols != cur_table.num_cols:
+                        # TODO: 这里需要添加判断来处理这种意外情况
                         logging.info(f"don't have header but column number is not equal in page {page.id}")
                         print(f"<{pre_table.num_rows} X {pre_table.num_cols}> and <{cur_table.num_rows} X {cur_table.num_cols}>")
                         continue
@@ -360,7 +363,8 @@ class Converter:
             'page_cnt': len(self._pages),  # count of all pages
             'pages': [page.store() for page in self._pages
                       if page.finalized],  # parsed pages only
-            'block_tree': self._skeleton.store()
+            # 'block_tree': self._skeleton.store()
+            'skeleton_list': self._skeleton.store()
         }
 
     def restore(self, data: dict):
@@ -376,8 +380,10 @@ class Converter:
             idx = raw_page.get('id', -1)
             self._pages[idx].restore(raw_page)
 
-        raw_tree = data.get('block_tree', {})
-        self._skeleton.restore(raw_tree)
+        # raw_tree = data.get('block_tree', {})
+        # self._skeleton.restore(raw_tree)
+        raw_list = data.get('skeleton_list', [])
+        self._skeleton.restore(raw_list)
 
     def serialize(self, filename: str):
         '''Write parsed pages to specified JSON file.'''

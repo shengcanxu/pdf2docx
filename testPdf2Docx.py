@@ -6,6 +6,7 @@ import json
 # json_file = 'test2.json'
 pdf_file = 'unresolved.pdf'
 json_file = 'unresolved.json'
+table_file = 'table_json.json'
 docx_file = 'sample.docx'
 
 
@@ -49,21 +50,21 @@ def restore_from_json():
         cv.restore(data)
     return cv
 
+def save_table_json(cv):
+    table_json = cv.skeleton.skeleton_list_to_json()
+    strData = json.dumps(table_json)
+    with open(table_file, "w") as f:
+        f.write(strData)
 
 # parse_pdf_to_json()
-# parse_page_on_index(72, 3)
+# parse_page_on_index(132, 2)
 
 cv = restore_from_json()
 
-cv._combineTables()
+# cv._combineTables()
 # cv.block_tree.print_tree()
-# cv.skeleton.print_tables()
-
-aa=2
-# skeleton = PdfSkeleton(cv.pages)
-# skeleton.build_skeleton()
-# skeleton.get_indent_space()
-# skeleton.get_font_size()
+cv.skeleton.print_skeleton_list()
+save_table_json(cv)
 
 
 
